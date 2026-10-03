@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Programmation ESP8266</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#202124;overflow:hidden}
+header{height:62px;background:#263238;color:white;display:flex;align-items:center;padding:0 18px;gap:18px;white-space:nowrap;overflow:hidden}
+header h1{font-size:20px;margin:0}
+header .sub{font-size:13px;opacity:.8}
+button{border:0;border-radius:7px;padding:9px 13px;font-weight:bold;cursor:pointer}
+#copy{margin-left:auto;background:#43a047;color:white}
+#clearProgram{background:#eceff1}
+.app{height:calc(100vh - 62px);display:grid;grid-template-columns:235px minmax(360px,1fr) 455px;gap:0}
+.panel{background:white;border-right:1px solid #d8dde1;overflow:auto}
+.palette{padding:14px}
+.palette h2,.editor h2{font-size:15px;margin:8px 0 12px}
+.cat{font-size:12px;text-transform:uppercase;color:#607d8b;font-weight:bold;margin:17px 0 7px}
+.block{white-space:nowrap;user-select:none;cursor:grab;border-radius:9px;padding:12px;margin:8px 0;position:relative;color:white;font-weight:bold;box-shadow:0 2px 4px #0002}
+.palette .mathblock{white-space:normal;height:44px;display:flex;align-items:center;line-height:16px;gap:7px}.palette .mathblock .mathIcon{font-size:18px;line-height:1;flex:0 0 auto;display:flex;align-items:center}.palette .mathblock .mathText{display:flex;flex-direction:column;justify-content:center;line-height:15px}
+.palette .funcblock,.palette .callblock{font-size:13px;letter-spacing:-.15px}
+.block:active{cursor:grabbing}
+.maxblock{background:#1976d2}.delayblock{background:#fb8c00}.clearblock{background:#546e7a}
+.help{font-size:12px;color:#607d8b;line-height:1.4;margin-top:16px}
+.workspace{padding:18px;overflow:auto;background:#eef2f5}
+.workspaceTitle{display:flex;align-items:center;justify-content:space-between}
+.workspaceTitle h2{font-size:18px;margin:0 0 12px}
+.dropzone{min-height:480px;background:white;border:3px dashed #c5cdd3;border-radius:12px;padding:16px;position:relative}
+.dropzone.empty:after{content:"Glissez des blocs ici";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#90a4ae;font-size:18px;font-weight:bold;pointer-events:none}
+.programBlock{position:relative;border-radius:10px;color:white;margin:1px 0;padding:11px 42px 11px 42px;box-shadow:0 2px 5px #0002;cursor:pointer}
+.programBlock.selected{outline:4px solid #90caf9}
+.programBlock .name{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.programBlock.math .name{white-space:normal;line-height:16px;display:flex;align-items:center;min-height:32px}.programBlock.math .mathIcon{font-size:19px;line-height:1;flex:0 0 auto;margin-right:8px;display:flex;align-items:center}.programBlock.math .mathText{display:flex;flex-direction:column;justify-content:center;line-height:16px;white-space:nowrap}
+.programBlock .desc{font-size:12px;margin-top:4px;opacity:.92}
+.programBlock .delete{position:absolute;right:7px;top:7px;background:#ffffff44;color:white;border-radius:5px;padding:3px 7px}
+.programBlock .duplicate{position:absolute;right:39px;top:7px;background:#ffffff44;color:white;border-radius:5px;padding:3px 7px;cursor:pointer}.programBlock .duplicate:hover{background:#ffffff66}
+
+.functionShelf{margin-top:16px;background:#fff;border:1px solid #d8dde1;border-radius:10px;padding:12px}.functionShelf.dropTargetActive{background:#e3f2fd;border:3px dashed #1976d2}
+.functionShelf h3{margin:0 0 8px;font-size:15px}
+.functionCard{background:#fce4ec;border:2px solid #c2185b;border-radius:10px;padding:10px;margin:9px 0}
+.functionHeader{display:flex;align-items:center;gap:8px;font-weight:bold;color:#880e4f;margin:0;min-height:34px;cursor:pointer}
+.functionTitle{flex:1}
+.functionToggle{width:30px;height:30px;padding:0;border-radius:50%;background:white;border:1px solid #c2185b;color:#880e4f;font-size:17px;line-height:28px;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .15s}
+.functionToggle:hover{background:#f8bbd0}
+.functionCard.collapsed .functionToggle{transform:none}
+.blockSlot{min-height:48px;border:2px dashed #b0bec5;border-radius:8px;padding:6px;margin-top:8px;background:#fafafa}
+.functionSlot{min-height:48px}
+.blockSlot.active{border-color:#1976d2;background:#e3f2fd}
+.insertZone{height:8px;margin:0;border-radius:4px;transition:height .12s,background .12s,border .12s;position:relative;z-index:30;background:transparent;border:0}
+.insertZone.active{height:26px;background:rgba(144,202,249,.18);border:2px dashed #1976d2;margin:1px 0}
+.insertZone.endZone{height:70px;margin:0;background:transparent;border:0}
+.insertZone.endZone.active{height:70px;background:rgba(144,202,249,.20);border:2px solid #1976d2}
+.dropzone.empty .insertZone{height:420px;margin:0;border:0;background:transparent;display:block}
+.dropzone.empty .insertZone.active{background:#e3f2fd;border:3px dashed #1976d2}.programBlock.dragging{opacity:.45}.dragHandle{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:18px;line-height:1;color:#ffffffaa;cursor:grab;user-select:none}.dragHandle:active{cursor:grabbing}
+.blockSlot.emptySlot:after{content:"Glissez les blocs ici";display:block;text-align:center;color:#90a4ae;font-size:12px;padding:8px}
+.programBlock.container{padding-bottom:9px}
+.programBlock.max{background:#1976d2}.programBlock.delay{background:#fb8c00}.programBlock.clear{background:#546e7a}.programBlock.repeat{background:#8e24aa}.programBlock.if{background:#00897b}.programBlock.read{background:#3949ab}.programBlock.write{background:#00897a}.programBlock.var{background:#6d4c41}.programBlock.math{background:#5e35b1}.programBlock.func{background:#c2185b}.programBlock.call{background:#ad1457}
+.readblock{background:#3949ab}.writeblock{background:#00897a}.varblock{background:#6d4c41}.mathblock{background:#5e35b1}.funcblock{background:#c2185b}.callblock{background:#ad1457}
+.repeatblock{background:#8e24aa}.ifblock{background:#00897b}
+.maxMiniPreview{position:absolute;left:220px;right:auto;top:50%;transform:translateY(-50%);display:flex;gap:2px;align-items:center;padding:3px;background:transparent}
+.maxMiniMatrix{display:grid;grid-template-columns:repeat(8,5px);grid-template-rows:repeat(8,5px);gap:1px;background:#455a64;padding:2px;border-radius:3px;box-sizing:content-box}
+.maxMiniMatrix + .maxMiniMatrix{position:relative}
+.maxMiniMatrix + .maxMiniMatrix::before{content:'';position:absolute;left:-2px;top:3px;bottom:3px;width:1px;background:#1976d2}
+.maxMiniCell{width:5px;height:5px;background:#263238;border:0;box-sizing:border-box}
+.maxMiniCell.on{background:#fff}
+
+.editor{padding:14px;background:#fff;overflow:auto}
+.editorBox{background:#f7f9fa;border:1px solid #d8dde1;border-radius:10px;padding:12px}
+#noSelection{color:#78909c;font-size:14px;line-height:1.5}
+#selectedInfo{display:none}
+.field{margin:10px 0}
+.field label{font-size:13px;font-weight:bold;display:block;margin-bottom:5px}
+input[type=number],select{width:100%;padding:8px;border:1px solid #b0bec5;border-radius:6px;font-size:14px}
+.matrices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.matrixWrap{background:#eceff1;border-radius:8px;padding:8px}
+.matrixWrap h3{font-size:12px;margin:0 0 6px}
+.matrix{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:#37474f;padding:3px;border-radius:5px;aspect-ratio:1}
+.cell{background:#263238;border-radius:2px;cursor:pointer}
+.cell.on{background:#fff}
+.editorActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.editorActions button{background:#cfd8dc}
+#codeBox{margin-top:12px;background:#263238;color:#e0f2f1;border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:12px;white-space:pre;overflow:auto;max-height:250px}
+#toast{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-12px);background:#263238;color:white;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:bold;box-shadow:0 3px 12px #0004;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.autoSaveStatus{font-size:11px;color:#546e7a;margin-left:4px;white-space:nowrap;opacity:.9;display:inline-flex;align-items:center;justify-content:flex-start;width:155px;min-width:155px;flex:0 0 155px}
+.status{font-size:12px;color:#546e7a;margin-top:8px}
+@media(max-width:950px){
+ .app{grid-template-columns:190px 1fr}
+ .editor{grid-column:1/3;border-top:1px solid #ddd}
+ body{overflow:auto}.app{height:auto}.dropzone{min-height:350px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Programmation ESP8266</h1>
+  <div class="sub">Interface en blocs — NodeMCU ESP8266</div>
+  <button id="saveProgram">💾 Enregistrer</button>
+  <button id="openProgram">📂 Ouvrir</button>
+  <input id="fileProgram" type="file" accept=".espbloc,.json,application/json" style="display:none">
+  <button id="clearProgram">Effacer le programme</button>
+  <button id="copy">📋 COPIER LE CODE ARDUINO</button>
+  <span id="autoSaveStatus" class="autoSaveStatus">● Sauvegarde automatique</span>
+</header>
+
+<div class="app">
+  <aside class="panel palette">
+    <h2>Blocs</h2>
+    <div class="cat">Affichage</div>
+    <div class="block maxblock" draggable="true" data-type="max">💡 Matrice lumineuse</div>
+    <div class="block clearblock" draggable="true" data-type="clear">⬛ Effacer les matrices</div>
+
+    <div class="cat">Temps</div>
+    <div class="block delayblock" draggable="true" data-type="delay">⏱ Délai</div>
+
+    <div class="cat">Entrées / sorties</div>
+    <div class="block readblock" draggable="true" data-type="read">📥 DigitalRead</div>
+    <div class="block writeblock" draggable="true" data-type="write">📤 DigitalWrite</div>
+
+    <div class="cat">Variables et calculs</div>
+    <div class="block varblock" draggable="true" data-type="var">📦 Créer une variable</div>
+    <div class="block mathblock" draggable="true" data-type="math"><span class="mathIcon">➗</span><span class="mathText"><span>Opération</span><span>mathématique</span></span></div>
+
+    <div class="cat">Contrôle</div>
+    <div class="block repeatblock" draggable="true" data-type="repeat">🔁 Répéter</div>
+    <div class="block ifblock" draggable="true" data-type="if">❓ SI… ALORS</div>
+
+    <div class="cat">Fonctions</div>
+    <div class="block funcblock" draggable="true" data-type="func">🔧 Définir une fonction</div>
+    <div class="block callblock" draggable="true" data-type="call">▶ Appeler une fonction</div>
+
+    <div class="help">
+      <b>Comment faire ?</b><br>
+      1. Faites glisser un bloc dans la zone centrale.<br>
+      2. Cliquez sur un bloc MAX7219 pour dessiner le motif à droite.<br>
+      3. Ajoutez des délais entre les motifs.<br>
+      4. L'ordre des blocs correspond à l'ordre d'exécution.<br>
+      5. Utilisez <b>Répéter</b> pour créer une boucle Arduino.<br>
+      6. Utilisez <b>DigitalRead</b> et <b>DigitalWrite</b> pour les entrées/sorties.<br>
+      7. Créez des <b>variables</b> et faites des calculs.<br>
+      8. Glissez <b>Définir une fonction</b> directement dans la section Fonctions.<br>
+      9. Copiez ensuite le code dans Arduino IDE.
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <div class="workspaceTitle"><h2>Programme</h2><span class="status" id="count"></span></div><div class="status">⋮⋮ = déplacer un bloc • La zone entre deux blocs s’agrandit lorsque vous arrivez dessus.</div>
+    <div id="dropzone" class="dropzone empty"></div>
+    <h2 style="font-size:16px;margin:18px 0 8px">Code Arduino généré</h2>
+    <div class="status">Le code est volontairement simple : chaque matrice est regroupée séparément et chaque DEL est représentée par un octet binaire.</div>
+    <div id="codeBox"></div>
+  </main>
+
+  <div id="toast">Code copié !</div>
+
+  <aside class="editor">
+    <h2>Éditeur du bloc</h2>
+    <div class="editorBox">
+      <div id="noSelection">Sélectionnez un bloc <b>MAX7219</b> dans le programme pour dessiner son motif dans les quatre matrices.</div>
+      <div id="selectedInfo">
+        <div id="selectedTitle" style="font-weight:bold;font-size:16px;margin-bottom:8px"></div>
+        <div id="maxEditor">
+          <div class="matrices" id="matrices"></div>
+          <div class="editorActions">
+            <button onclick="fillAll(false)">Tout éteindre</button>
+            <button onclick="fillAll(true)">Tout allumer</button>
+            <button onclick="invertAll()">Inverser</button>
+          </div>
+        </div>
+        <div id="delayEditor" style="display:none">
+          <div class="field">
+            <label>Durée du délai (ms)</label>
+            <input id="delayValue" type="number" min="0" step="50" value="500">
+          </div>
+          <button onclick="applyDelay()">Appliquer</button>
+        </div>
+
+        <div id="repeatEditor" style="display:none">
+          <div class="field">
+            <label>Nombre de répétitions</label>
+            <input id="repeatValue" type="number" min="1" step="1" value="5">
+          </div>
+          <button onclick="applyRepeat()">Appliquer</button>
+          <div class="status">Dans cette première version, le bloc Répéter est généré comme une boucle Arduino. Pour placer plusieurs actions à l'intérieur de la boucle, utilisez le bouton d'insertion prévu dans le programme.</div>
+        </div>
+
+        <div id="ifEditor" style="display:none">
+          <div class="field">
+            <label>Entrée numérique</label>
+            <select id="ifPin">
+              <option value="8">D8</option>
+              <option value="4">D4</option>
+              <option value="5">D5</option>
+              <option value="6">D6</option>
+              <option value="7">D7</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Condition</label>
+            <select id="ifOp">
+              <option value="HIGH">est à HIGH</option>
+              <option value="LOW">est à LOW</option>
+            </select>
+          </div>
+          <button onclick="applyIf()">Appliquer</button>
+          <div class="status">Exemple : <b>SI D8 est à HIGH ALORS</b>. D8 sera configurée comme entrée numérique.</div>
+        </div>
+
+        <div id="readEditor" style="display:none">
+          <div class="field"><label>Lire l'entrée</label>
+            <select id="readPin"><option value="8">D8</option><option value="4">D4</option><option value="5">D5</option><option value="6">D6</option><option value="7">D7</option></select>
+          </div>
+          <div class="field"><label>Ranger le résultat dans</label><input id="readVariable" value="entree"></div>
+          <button onclick="applyRead()">Appliquer</button>
+        </div>
+
+        <div id="writeEditor" style="display:none">
+          <div class="field"><label>Sortie</label>
+            <select id="writePin"><option value="8">D8</option><option value="4">D4</option><option value="5">D5</option><option value="6">D6</option><option value="7">D7</option></select>
+          </div>
+          <div class="field"><label>Valeur</label><select id="writeValue"><option>HIGH</option><option>LOW</option></select></div>
+          <button onclick="applyWrite()">Appliquer</button>
+        </div>
+
+        <div id="varEditor" style="display:none">
+          <div class="field"><label>Nom de la variable</label><input id="varName" value="maVariable"></div>
+          <div class="field"><label>Valeur initiale</label><input id="varInitial" value="0"></div>
+          <button onclick="applyVar()">Appliquer</button>
+        </div>
+
+        <div id="mathEditor" style="display:none">
+          <div class="field"><label>Variable à modifier</label><input id="mathVariable" value="maVariable"></div>
+          <div class="field"><label>Premier terme</label><input id="mathA" value="maVariable"></div>
+          <div class="field"><label>Opération</label><select id="mathOp"><option>+</option><option>-</option><option>*</option><option>/</option><option>%</option></select></div>
+          <div class="field"><label>Deuxième terme</label><input id="mathB" value="1"></div>
+          <button onclick="applyMath()">Appliquer</button>
+        </div>
+
+        <div id="funcEditor" style="display:none">
+          <div class="field"><label>Nom de la fonction</label><input id="funcName" value="maFonction"></div>
+          <button onclick="applyFunc()">Appliquer</button>
+          <div class="status">Placez les blocs d'action après ce bloc. La prochaine version pourra les regrouper automatiquement dans la fonction.</div>
+        </div>
+
+        <div id="callEditor" style="display:none">
+          <div class="field"><label>Fonction à appeler</label><input id="callName" value="maFonction"></div>
+          <button onclick="applyCall()">Appliquer</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+let blocks=[];
+let selectedId=null;
+let nextId=1;
+
+function emptyFrame(){
+  return Array.from({length:4},()=>Array.from({length:8},()=>Array(8).fill(false)));
+}
+let functions=[];
+
+function makeBlock(type){
+  const b={id:nextId++,type};
+  if(type==='max') b.frame=emptyFrame();
+  if(type==='delay') b.ms=500;
+  if(type==='repeat'){ b.times=5; b.body=[]; }
+  if(type==='if'){ b.pin=8; b.op='HIGH'; b.body=[]; }
+  if(type==='read'){ b.pin=8; b.variable='entree'; }
+  if(type==='write'){ b.pin=8; b.value='HIGH'; }
+  if(type==='var'){ b.name='maVariable'; b.value='0'; }
+  if(type==='math'){ b.variable='maVariable'; b.a='maVariable'; b.op='+'; b.b='1'; }
+  if(type==='call') b.name='maFonction';
+  return b;
+}
+
+function addBlock(type,targetBody=blocks){
+  if(type==='func'){
+    const f={id:nextId++,name:'maFonction',body:[]};
+    functions.push(f);
+    f.collapsed=false;
+    selectedId=f.id;
+    render();
+    return;
+  }
+  const b=makeBlock(type);
+  targetBody.push(b);
+  selectedId=b.id;
+  render();
+}
+
+function blockLabel(b){
+  if(b.type==='max') return ['💡 Matrice lumineuse','MAX7219'];
+  if(b.type==='delay') return ['⏱ Délai',b.ms+' ms'];
+  if(b.type==='repeat') return ['🔁 Répéter '+b.times+' fois','Glissez les actions dans la zone'];
+  if(b.type==='if') return ['❓ SI D'+b.pin+' = '+b.op+' ALORS','Glissez les actions dans la zone'];
+  if(b.type==='read') return ['📥 DigitalRead D'+b.pin,'→ '+b.variable];
+  if(b.type==='write') return ['📤 DigitalWrite D'+b.pin+' = '+b.value,''];
+  if(b.type==='var') return ['📦 Variable '+b.name,'= '+b.value];
+  if(b.type==='math') return ['➗ Opération mathématique',''+b.variable+' = '+b.a+' '+b.op+' '+b.b];
+  if(b.type==='call') return ['▶ Appeler '+b.name+'()',''];
+  return ['⬛ Effacer les matrices',''];
+}
+
+function removeBlockFrom(body,id){
+  for(let i=body.length-1;i>=0;i--){
+    const b=body[i];
+    if(b.id===id){body.splice(i,1);return true;}
+    if((b.type==='repeat'||b.type==='if') && removeBlockFrom(b.body,id)) return true;
+  }
+  return false;
+}
+function findBodyOf(id,body=blocks){
+  for(const b of body){
+    if(b.id===id) return body;
+    if((b.type==='repeat'||b.type==='if') && findBodyOf(id,b.body)) return b.body;
+  }
+  return null;
+}
+
+function bodyContains(body,id){
+  if(!body)return false;
+  for(const b of body){
+    if(b.id===id)return true;
+    if(b.body && bodyContains(b.body,id))return true;
+  }
+  return false;
+}
+function locateInBody(id,body,parent=null){
+  for(let i=0;i<body.length;i++){
+    if(body[i].id===id)return {body,index:i,block:body[i],parent};
+    if(body[i].body){
+      const r=locateInBody(id,body[i].body,body[i]);
+      if(r)return r;
+    }
+  }
+  return null;
+}
+function locateBlock(id){
+  const main=locateInBody(id,blocks,null);
+  if(main)return main;
+  for(const f of functions){
+    const r=locateInBody(id,f.body,{function:f});
+    if(r)return r;
+  }
+  return null;
+}
+function getTargetBody(owner){
+  if(owner==='root')return blocks;
+  if(owner && owner.startsWith('function_')){
+    const f=functions.find(x=>String(x.id)===owner.substring(9));
+    return f?f.body:null;
+  }
+  const found=locateBlock(parseInt(owner));
+  return found && found.block ? found.block.body : null;
+}
+
+function blockLabel(b){
+  if(b.type==='max') return ['💡 Matrice lumineuse','MAX7219'];
+  if(b.type==='delay') return ['⏱ Délai',b.ms+' ms'];
+  if(b.type==='repeat') return ['🔁 Répéter '+b.times+' fois','Glissez les actions dans la zone'];
+  if(b.type==='if') return ['❓ SI D'+b.pin+' = '+b.op+' ALORS','Glissez les actions dans la zone'];
+  if(b.type==='read') return ['📥 DigitalRead D'+b.pin,'→ '+b.variable];
+  if(b.type==='write') return ['📤 DigitalWrite D'+b.pin+' = '+b.value,''];
+  if(b.type==='var') return ['📦 Variable '+b.name,'= '+b.value];
+  if(b.type==='math') return ['➗ Opération mathématique',''+b.variable+' = '+b.a+' '+b.op+' '+b.b];
+  if(b.type==='call') return ['▶ Appeler '+b.name+'()',''];
+  return ['⬛ Effacer les matrices',''];
+}
+
+function cloneBlock(original){
+  // Copie profonde d'un bloc, en conservant notamment les motifs MAX7219.
+  const copy={};
+  Object.keys(original).forEach(key=>{
+    if(key==='id') return;
+    if(key==='frame'){
+      copy.frame=original.frame.map(matrix=>matrix.map(row=>row.slice()));
+    }else if(key==='body'){
+      copy.body=original.body.map(child=>cloneBlock(child));
+    }else{
+      copy[key]=original[key];
+    }
+  });
+  copy.id=nextId++;
+  return copy;
+}
+
+function duplicateBlock(id){
+  const source=locateBlock(id);
+  if(!source)return;
+  const copy=cloneBlock(source.block);
+  // La copie est placée immédiatement après le bloc original,
+  // dans le même conteneur (programme, SI, RÉPÉTER ou fonction).
+  source.body.splice(source.index+1,0,copy);
+  selectedId=copy.id;
+  render();
+}
+
+function removeById(id){
+  const r=locateBlock(id);
+  if(r){r.body.splice(r.index,1);return r.block;}
+  return null;
+}
+
+function insertAt(body,index,item){
+  body.splice(Math.max(0,Math.min(index,body.length)),0,item);
+}
+
+function canMove(item,targetBody){
+  if(!item)return false;
+  if(item.body && bodyContains(item.body,targetBody._ownerId)) return false;
+  return true;
+}
+
+function addDropZone(parentEl,body,index,label=''){
+  const z=document.createElement('div');
+  z.className='insertZone';
+  z.dataset.index=index;
+  z.dataset.owner=body._ownerId||'root';
+  z.dataset.end=(index===body.length?'1':'0');
+  if(index===body.length){
+    z.classList.add('endZone');
+    z.title='Déposer ici pour placer le bloc à la fin';
+  }
+  if(label) z.title=label;
+  parentEl.appendChild(z);
+}
+
+function addMaxMiniPreview(el,b){
+  const preview=document.createElement('div');
+  preview.className='maxMiniPreview';
+  for(let m=0;m<4;m++){
+    const mat=document.createElement('div');
+    mat.className='maxMiniMatrix';
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const cell=document.createElement('span');
+      cell.className='maxMiniCell'+(b.frame[m][r][c]?' on':'');
+      mat.appendChild(cell);
+    }
+    preview.appendChild(mat);
+  }
+  el.appendChild(preview);
+}
+
+function createProgramElement(b,body,index){
+  const el=document.createElement('div');
+  el.className='programBlock '+b.type+(b.id===selectedId?' selected':'');
+  el.draggable=false;
+  el.dataset.blockId=b.id;
+
+  const handle=document.createElement('span');
+  handle.className='dragHandle';
+  handle.textContent='⋮⋮';
+  handle.title='Glisser pour déplacer';
+  handle.draggable=true;
+  handle.addEventListener('mousedown',e=>e.stopPropagation());
+  handle.addEventListener('dragstart',e=>{
+    e.stopPropagation();
+    draggedBlockId=b.id;
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('moveBlockId',String(b.id));
+    e.dataTransfer.setData('text/plain','move');
+    el.classList.add('dragging');
+  });
+  handle.addEventListener('dragend',()=>{el.classList.remove('dragging');setTimeout(()=>{draggedBlockId=null},150)});
+  el.appendChild(handle);
+
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('delete'))return;
+    e.stopPropagation();selectedId=b.id;render();
+  });
+  const [title,desc]=blockLabel(b);
+  const titleEl=document.createElement('div');titleEl.className='name';
+  if(b.type==='math'){
+    const icon=document.createElement('span'); icon.className='mathIcon'; icon.textContent='➗';
+    const txt=document.createElement('span'); txt.className='mathText';
+    const l1=document.createElement('span'); l1.textContent='Opération';
+    const l2=document.createElement('span'); l2.textContent='mathématique';
+    txt.appendChild(l1); txt.appendChild(l2); titleEl.appendChild(icon); titleEl.appendChild(txt);
+  }else{ titleEl.textContent=title; }
+  el.appendChild(titleEl);
+  if(desc){const d=document.createElement('div');d.className='desc';d.textContent=desc;el.appendChild(d);}
+  if(b.type==='max') addMaxMiniPreview(el,b);
+
+  if(b.body){
+    const slot=document.createElement('div');
+    slot.className='blockSlot nestedSlot'+(b.body.length?'':' emptySlot');
+    b.body._ownerId=b.id;
+    slot.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();slot.classList.add('active')});
+    slot.addEventListener('dragleave',()=>slot.classList.remove('active'));
+    slot.addEventListener('drop',e=>{
+      // Dropping on the interior appends to that container.
+      e.preventDefault();e.stopPropagation();slot.classList.remove('active');
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette){
+        if(palette==='func')return;
+        const item=makeBlock(palette);b.body.push(item);selectedId=item.id;render();return;
+      }
+      const moveId=parseInt(e.dataTransfer.getData('moveBlockId'))||draggedBlockId||0;
+      if(!moveId)return;
+      const source=locateBlock(moveId);
+      if(!source || source.block===b || bodyContains(source.block.body||[],b.id))return;
+      const item=source.block;
+      source.body.splice(source.index,1);
+      b.body.push(item);
+      selectedId=item.id;render();
+    });
+    b.body.forEach((child,i)=>{
+      addDropZone(slot,b.body,i);
+      slot.appendChild(createProgramElement(child,b.body,i));
+    });
+    addDropZone(slot,b.body,b.body.length);
+    el.appendChild(slot);
+  }
+
+  const duplicate=document.createElement('button');
+  duplicate.className='duplicate';
+  duplicate.textContent='⧉';
+  duplicate.title='Copier ce bloc';
+  duplicate.onclick=e=>{
+    e.stopPropagation();
+    duplicateBlock(b.id);
+  };
+  el.appendChild(duplicate);
+
+  const del=document.createElement('button');del.className='delete';del.textContent='×';
+  del.onclick=e=>{
+    e.stopPropagation();
+    removeById(b.id);
+    if(selectedId===b.id)selectedId=null;
+    render();
+  };
+  el.appendChild(del);
+  return el;
+}
+
+function renderBody(body,container){
+  // Give each body an owner marker without changing the array API.
+  if(!body._ownerId)body._ownerId='root';
+  addDropZone(container,body,0);
+  body.forEach((b,i)=>{
+    container.appendChild(createProgramElement(b,body,i));
+    addDropZone(container,body,i+1);
+  });
+}
+
+function render(){
+  const dz=document.getElementById('dropzone');
+  dz.innerHTML='';
+  dz.classList.toggle('empty',blocks.length===0);
+  blocks._ownerId='root';
+  renderBody(blocks,dz);
+
+  document.getElementById('count').textContent=blocks.length+' bloc(s) dans le programme principal';
+
+  let shelf=document.getElementById('functionShelf');
+  if(!shelf){
+    shelf=document.createElement('div');shelf.id='functionShelf';shelf.className='functionShelf';
+    dz.parentNode.insertBefore(shelf,dz.nextSibling);
+
+    // La section Fonctions accepte directement le bloc
+    // « Définir une fonction » provenant de la palette.
+    shelf.addEventListener('dragover',e=>{
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette==='func'){
+        e.preventDefault();
+        e.stopPropagation();
+        shelf.classList.add('dropTargetActive');
+        e.dataTransfer.dropEffect='copy';
+      }
+    });
+    shelf.addEventListener('dragleave',e=>{
+      if(!shelf.contains(e.relatedTarget)) shelf.classList.remove('dropTargetActive');
+    });
+    shelf.addEventListener('drop',e=>{
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette!=='func')return;
+      e.preventDefault();
+      e.stopPropagation();
+      shelf.classList.remove('dropTargetActive');
+      addBlock('func');
+    });
+  }
+  shelf.innerHTML='<h3>🔧 Fonctions</h3>';
+  if(!functions.length){
+    shelf.innerHTML+='<div class="status">Aucune fonction. Glissez « Définir une fonction » ici pour en créer une.</div>';
+  }else{
+    functions.forEach(f=>{
+      const card=document.createElement('div');
+      card.className='functionCard'+(f.collapsed?' collapsed':'');
+
+      const header=document.createElement('div');header.className='functionHeader';
+      const title=document.createElement('span');title.className='functionTitle';
+      title.textContent='🔧 Fonction : '+f.name;
+      header.appendChild(title);
+
+      const toggle=document.createElement('button');
+      toggle.className='functionToggle';
+      toggle.type='button';
+      toggle.title=f.collapsed?'Afficher les blocs de la fonction':'Réduire la fonction';
+      toggle.textContent=f.collapsed?'▸':'▾';
+      toggle.onclick=e=>{
+        e.stopPropagation();
+        f.collapsed=!f.collapsed;
+        render();
+      };
+      header.appendChild(toggle);
+      header.onclick=()=>{selectedId=f.id;renderEditor()};
+      card.appendChild(header);
+
+      if(!f.collapsed){
+        f.body._ownerId='function_'+f.id;
+        const slot=document.createElement('div');
+        slot.className='blockSlot functionSlot';
+        // Les fonctions utilisent exactement le même système de zones
+        // d'insertion et de déplacement que le programme principal.
+        renderBody(f.body,slot);
+        card.appendChild(slot);
+      }
+
+      const remove=document.createElement('button');remove.textContent='Supprimer la fonction';remove.style.marginTop='7px';
+      remove.onclick=()=>{functions=functions.filter(x=>x.id!==f.id);if(selectedId===f.id)selectedId=null;render()};
+      card.appendChild(remove);
+      shelf.appendChild(card);
+    });
+  }
+
+  renderEditor();
+  updateCode();
+  scheduleAutoSave();
+}
+
+function getSelectedBlock(){
+  if(selectedId==null)return null;
+  const found=locateBlock(selectedId);
+  if(found)return found.block;
+  const f=functions.find(x=>x.id===selectedId);
+  return f?{type:'func',name:f.name,id:f.id}:null;
+}
+
+function renderEditor(){
+  let b=getSelectedBlock();
+  document.getElementById('noSelection').style.display=b?'none':'block';
+  document.getElementById('selectedInfo').style.display=b?'block':'none';
+  if(!b)return;
+  document.getElementById('selectedTitle').textContent=
+    b.type==='max'?'💡 Matrice lumineuse — MAX7219':b.type==='delay'?'⏱ Délai':'⬛ Effacer les matrices';
+  document.getElementById('maxEditor').style.display=b.type==='max'?'block':'none';
+  document.getElementById('delayEditor').style.display=b.type==='delay'?'block':'none';
+  document.getElementById('repeatEditor').style.display=b.type==='repeat'?'block':'none';
+  document.getElementById('ifEditor').style.display=b.type==='if'?'block':'none';
+  document.getElementById('readEditor').style.display=b.type==='read'?'block':'none';
+  document.getElementById('writeEditor').style.display=b.type==='write'?'block':'none';
+  document.getElementById('varEditor').style.display=b.type==='var'?'block':'none';
+  document.getElementById('mathEditor').style.display=b.type==='math'?'block':'none';
+  document.getElementById('funcEditor').style.display=b.type==='func'?'block':'none';
+  document.getElementById('callEditor').style.display=b.type==='call'?'block':'none';
+  document.getElementById('repeatEditor').style.display=b.type==='repeat'?'block':'none';
+  document.getElementById('ifEditor').style.display=b.type==='if'?'block':'none';
+  document.getElementById('readEditor').style.display=b.type==='read'?'block':'none';
+  document.getElementById('writeEditor').style.display=b.type==='write'?'block':'none';
+  document.getElementById('varEditor').style.display=b.type==='var'?'block':'none';
+  document.getElementById('mathEditor').style.display=b.type==='math'?'block':'none';
+  document.getElementById('funcEditor').style.display=b.type==='func'?'block':'none';
+  document.getElementById('callEditor').style.display=b.type==='call'?'block':'none';
+  if(b.type==='max'){
+    const holder=document.getElementById('matrices');holder.innerHTML='';
+    for(let m=0;m<4;m++){
+      const wrap=document.createElement('div');wrap.className='matrixWrap';
+      wrap.innerHTML='<h3>Matrice '+(m+1)+'</h3>';
+      const mat=document.createElement('div');mat.className='matrix';
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+        const cell=document.createElement('div');cell.className='cell'+(b.frame[m][r][c]?' on':'');
+        cell.onclick=()=>{b.frame[m][r][c]=!b.frame[m][r][c];render()};
+        mat.appendChild(cell);
+      }
+      wrap.appendChild(mat);holder.appendChild(wrap);
+    }
+  } else if(b.type==='delay'){
+    document.getElementById('delayValue').value=b.ms;
+  } else if(b.type==='repeat'){
+    document.getElementById('repeatValue').value=b.times;
+  } else if(b.type==='if'){
+    document.getElementById('ifPin').value=b.pin;
+    document.getElementById('ifOp').value=b.op;
+  } else if(b.type==='read'){
+    document.getElementById('readPin').value=b.pin;
+    document.getElementById('readVariable').value=b.variable;
+  } else if(b.type==='write'){
+    document.getElementById('writePin').value=b.pin;
+    document.getElementById('writeValue').value=b.value;
+  } else if(b.type==='var'){
+    document.getElementById('varName').value=b.name;
+    document.getElementById('varInitial').value=b.value;
+  } else if(b.type==='math'){
+    document.getElementById('mathVariable').value=b.variable;
+    document.getElementById('mathA').value=b.a;
+    document.getElementById('mathOp').value=b.op;
+    document.getElementById('mathB').value=b.b;
+  } else if(b.type==='func'){
+    document.getElementById('funcName').value=b.name;
+  } else if(b.type==='call'){
+    document.getElementById('callName').value=b.name;
+  }
+}
+function fillAll(v){
+  const b=getSelectedBlock();if(!b||b.type!=='max')return;
+  b.frame.forEach(m=>m.forEach(r=>r.fill(v)));render();
+}
+function invertAll(){
+  const b=getSelectedBlock();if(!b||b.type!=='max')return;
+  b.frame.forEach(m=>m.forEach(r=>r.forEach((v,c)=>r[c]=!v)));render();
+}
+function applyDelay(){
+  const b=getSelectedBlock();if(!b||b.type!=='delay')return;
+  b.ms=Math.max(0,parseInt(document.getElementById('delayValue').value)||0);render();
+}
+function applyRepeat(){
+  const b=getSelectedBlock();if(!b||b.type!=='repeat')return;
+  b.times=Math.max(1,parseInt(document.getElementById('repeatValue').value)||1);render();
+}
+function applyIf(){
+  const b=getSelectedBlock();if(!b||b.type!=='if')return;
+  b.pin=parseInt(document.getElementById('ifPin').value)||8;
+  b.op=document.getElementById('ifOp').value;
+  render();
+}
+function applyRead(){
+  const b=getSelectedBlock();if(!b||b.type!=='read')return;
+  b.pin=parseInt(document.getElementById('readPin').value)||8;
+  b.variable=document.getElementById('readVariable').value.trim()||'entree';
+  render();
+}
+function applyWrite(){
+  const b=getSelectedBlock();if(!b||b.type!=='write')return;
+  b.pin=parseInt(document.getElementById('writePin').value)||8;
+  b.value=document.getElementById('writeValue').value;
+  render();
+}
+function applyVar(){
+  const b=getSelectedBlock();if(!b||b.type!=='var')return;
+  b.name=document.getElementById('varName').value.trim()||'maVariable';
+  b.value=document.getElementById('varInitial').value.trim()||'0';
+  render();
+}
+function applyMath(){
+  const b=getSelectedBlock();if(!b||b.type!=='math')return;
+  b.variable=document.getElementById('mathVariable').value.trim()||'maVariable';
+  b.a=document.getElementById('mathA').value.trim()||'0';
+  b.op=document.getElementById('mathOp').value;
+  b.b=document.getElementById('mathB').value.trim()||'0';
+  render();
+}
+function applyFunc(){
+  const f=functions.find(x=>x.id===selectedId);
+  if(!f)return;
+  f.name=document.getElementById('funcName').value.trim()||'maFonction';
+  render();
+}
+function applyCall(){
+  const b=blocks.find(x=>x.id===selectedId);if(!b||b.type!=='call')return;
+  b.name=document.getElementById('callName').value.trim()||'maFonction';
+  render();
+}
+function columns(frame){
+  const out=[];
+  // Chaque matrice est compensée de 90° antihoraire pour l'orientation physique du MAX7219.
+  for(let m=0;m<4;m++){
+    const rotated=rotate90CCW(frame[m]);
+    for(let c=0;c<8;c++){
+      let bits=0;
+      for(let r=0;r<8;r++) if(rotated[r][c]) bits|=(1<<r);
+      out.push(bits);
+    }
+  }
+  return out;
+}
+function byteBinary(v){
+  return 'B'+v.toString(2).padStart(8,'0');
+}
+// Le module MAX7219 doit afficher le motif tourné de 90° antihoraire par rapport au dessin.
+function rotate90CCW(matrix){
+  const out=Array.from({length:8},()=>Array(8).fill(false));
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) out[7-c][r]=matrix[r][c];
+  return out;
+}
+function matrixColumns(frame,m){
+  const out=[];
+  const rotated=rotate90CCW(frame[m]);
+  for(let c=0;c<8;c++){
+    let bits=0;
+    for(let r=0;r<8;r++) if(rotated[r][c]) bits|=(1<<r);
+    out.push(bits);
+  }
+  return out;
+}
+function codeForFrame(frame){
+  let s='';
+  for(let m=0;m<4;m++){
+    s+=`  // ===== MATRICE ${m+1} =====\n`;
+    const cols=matrixColumns(frame,m);
+    for(let c=0;c<8;c++){
+      s+=`  ledMatrix.setColumn(${m*8+c}, ${byteBinary(cols[c])});\n`;
+    }
+  }
+  s+='  ledMatrix.commit();';
+  return s;
+}
+function codeForBody(body,indent='  '){
+  let out='';
+  body.forEach(b=>{
+    const i=indent;
+    if(b.type==='max'){
+      out+=`\n${i}// ******** AFFICHER UN MOTIF ********\n`;
+      const cols=columns(b.frame);
+      for(let m=0;m<4;m++){
+        out+=`${i}// ===== MATRICE ${m+1} =====\n`;
+        for(let c=0;c<8;c++) out+=`${i}ledMatrix.setColumn(${m*8+c}, ${byteBinary(cols[m*8+c])});\n`;
+      }
+      out+=`${i}ledMatrix.commit();\n`;
+    }else if(b.type==='delay'){
+      out+=`${i}// DÉLAI\n${i}delay(${b.ms});\n`;
+    }else if(b.type==='clear'){
+      out+=`${i}// EFFACER\n${i}ledMatrix.clear();\n${i}ledMatrix.commit();\n`;
+    }else if(b.type==='read'){
+      out+=`${i}// DIGITALREAD\n${i}${b.variable} = digitalRead(D${b.pin});\n`;
+    }else if(b.type==='write'){
+      out+=`${i}// DIGITALWRITE\n${i}digitalWrite(D${b.pin}, ${b.value});\n`;
+    }else if(b.type==='var'){
+      out+=`${i}// VARIABLE\n${i}${b.name} = ${b.value};\n`;
+    }else if(b.type==='math'){
+      out+=`${i}// CALCUL\n${i}${b.variable} = ${b.a} ${b.op} ${b.b};\n`;
+    }else if(b.type==='call'){
+      out+=`${i}// APPELER UNE FONCTION\n${i}${b.name}();\n`;
+    }else if(b.type==='repeat'){
+      out+=`\n${i}// ******** RÉPÉTER ${b.times} FOIS ********\n${i}for (int i = 0; i < ${b.times}; i++) {\n`;
+      out+=codeForBody(b.body,i+'  ');
+      out+=`${i}}\n`;
+    }else if(b.type==='if'){
+      out+=`\n${i}// ******** SI D${b.pin} = ${b.op} ********\n${i}if (digitalRead(D${b.pin}) == ${b.op}) {\n`;
+      out+=codeForBody(b.body,i+'  ');
+      out+=`${i}}\n`;
+    }
+  });
+  return out;
+}
+function updateCode(){
+  let code='';
+  functions.forEach(f=>{
+    code+=`// ==================================================\n// FONCTION : ${f.name}\n// ==================================================\n`;
+    code+=`void ${f.name}() {\n`;
+    code+=codeForBody(f.body,'  ');
+    code+='}\n\n';
+  });
+
+  code+=`#include <SPI.h>
+#include "LedMatrix.h"
+
+#define NUMBER_OF_DEVICES 4
+#define CS_PIN D4
+
+LedMatrix ledMatrix = LedMatrix(NUMBER_OF_DEVICES, CS_PIN);
+
+`;
+
+  // Collect variables used by blocks. Declarations are global.
+  const vars=[];
+  function collect(body){
+    body.forEach(b=>{
+      if(b.type==='var' && !vars.includes(b.name))vars.push(b.name);
+      if(b.type==='read' && !vars.includes(b.variable))vars.push(b.variable);
+      if(b.type==='repeat'||b.type==='if')collect(b.body);
+    });
+  }
+  collect(blocks); functions.forEach(f=>collect(f.body));
+  vars.forEach(v=>{code+=`int ${v} = 0;\n`;});
+  if(vars.length)code+='\n';
+
+  code+=`void setup() {
+  ledMatrix.init();
+  ledMatrix.setIntensity(8);
+`;
+  const inputPins=[],outputPins=[];
+  function collectPins(body){
+    body.forEach(b=>{
+      if((b.type==='read'||b.type==='if')&&!inputPins.includes(b.pin))inputPins.push(b.pin);
+      if(b.type==='write'&&!outputPins.includes(b.pin))outputPins.push(b.pin);
+      if(b.type==='repeat'||b.type==='if')collectPins(b.body);
+    });
+  }
+  collectPins(blocks);functions.forEach(f=>collectPins(f.body));
+  inputPins.forEach(pin=>code+=`  pinMode(D${pin}, INPUT);\n`);
+  outputPins.forEach(pin=>code+=`  pinMode(D${pin}, OUTPUT);\n`);
+  code+=`}
+
+void loop() {`;
+  if(blocks.length) code+=codeForBody(blocks,'  ');
+  else code+='\n  // Ajoutez des blocs dans le programme.';
+  code+=`\n}\n`;
+
+  document.getElementById('codeBox').textContent=code;
+}
+
+let draggedBlockId=null;
+
+function dragStart(e){
+  e.dataTransfer.setData('paletteType',e.currentTarget.dataset.type);
+  e.dataTransfer.effectAllowed='copy';
+}
+document.querySelectorAll('.palette .block').forEach(x=>x.addEventListener('dragstart',dragStart));
+
+document.addEventListener('dragover',e=>{
+  const zone=e.target.closest('.insertZone,.blockSlot,.functionShelf,#dropzone');
+  if(!zone)return;
+  e.preventDefault();
+  document.querySelectorAll('.insertZone.active,.blockSlot.active').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.functionShelf.dropTargetActive').forEach(x=>x.classList.remove('dropTargetActive'));
+  if(zone.classList.contains('insertZone') || zone.classList.contains('blockSlot')) zone.classList.add('active');
+  if(zone.classList.contains('functionShelf')) zone.classList.add('dropTargetActive');
+  e.dataTransfer.dropEffect=(draggedBlockId || e.dataTransfer.getData('moveBlockId'))?'move':'copy';
+});
+
+document.addEventListener('drop',e=>{
+  const zone=e.target.closest('.insertZone,.blockSlot,.functionShelf,#dropzone');
+  if(!zone)return;
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.insertZone.active,.blockSlot.active').forEach(x=>x.classList.remove('active'));
+
+  const palette=e.dataTransfer.getData('paletteType');
+  const moveId=parseInt(e.dataTransfer.getData('moveBlockId'))||draggedBlockId||0;
+
+  if(zone.classList.contains('functionShelf')){
+    if(palette==='func'){
+      zone.classList.remove('dropTargetActive');
+      addBlock('func');
+    }
+    return;
+  }
+
+  if(zone.classList.contains('insertZone')){
+    const body=getTargetBody(zone.dataset.owner);
+    if(!body)return;
+    const index=parseInt(zone.dataset.index)||0;
+    const isEndZone=zone.classList.contains('endZone');
+
+    if(palette){
+      if(palette==='func'){addBlock('func');return;}
+      const item=makeBlock(palette);
+      body.splice(index,0,item);
+      selectedId=item.id;
+      render();
+      return;
+    }
+
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      const item=source.block;
+
+      // Prevent dropping a container into itself or its descendants.
+      if(item.body && bodyContains(item.body, item.id))return;
+      if(item.body && bodyContains(item.body, parseInt(zone.dataset.owner)))return;
+
+      // If moving within the same body, remove first and compensate for index shift.
+      source.body.splice(source.index,1);
+      const isEnd = zone.dataset.end==='1';
+      let targetIndex = isEnd ? body.length : index;
+      // Pour une insertion entre deux blocs, il faut compenser le retrait
+      // du bloc source lorsqu'il se trouvait avant la zone cible.
+      // À la fin, targetIndex est déjà calculé après le retrait : aucune
+      // compensation ne doit être faite, sinon le bloc s'arrête une place trop tôt.
+      if(!isEnd && source.body===body && source.index<targetIndex)targetIndex--;
+      targetIndex=Math.max(0,Math.min(targetIndex,body.length));
+      body.splice(targetIndex,0,item);
+
+      selectedId=item.id;
+      render();
+      return;
+    }
+    return;
+  }
+
+  if(zone.classList.contains('blockSlot')){
+    let body=null;
+    const ownerEl=zone.closest('.programBlock');
+    if(ownerEl){
+      const found=locateBlock(parseInt(ownerEl.dataset.blockId));
+      if(found)body=found.block.body;
+    }else{
+      const card=zone.closest('.functionCard');
+      if(card){
+        const index=[...document.querySelectorAll('.functionCard')].indexOf(card);
+        if(functions[index])body=functions[index].body;
+      }
+    }
+    if(!body)return;
+
+    if(palette && palette!=='func'){
+      const item=makeBlock(palette);
+      body.push(item);selectedId=item.id;render();return;
+    }
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      if(source.body===body && source.index===body.length-1)return;
+      const item=source.block;
+      source.body.splice(source.index,1);
+      body.push(item);selectedId=item.id;render();
+    }
+    return;
+  }
+
+  if(zone.id==='dropzone'){
+    // Dans tout l'espace libre du programme, un bloc déplacé est automatiquement ajouté à la fin.
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      const item=source.block;
+      source.body.splice(source.index,1);
+      blocks.push(item);
+      selectedId=item.id;
+      render();
+      return;
+    }
+    if(palette){
+      if(palette==='func'){addBlock('func');return;}
+      const item=makeBlock(palette);
+      blocks.push(item);selectedId=item.id;render();
+    }
+  }
+});
+
+// ==================== SAUVEGARDE AUTOMATIQUE ====================
+const AUTO_SAVE_KEY='programmation_esp8266_autosave_v1';
+let autoSaveTimer=null;
+
+function updateAutoSaveStatus(text){
+  const el=document.getElementById('autoSaveStatus');
+  if(el)el.textContent=text;
+}
+
+function saveAuto(){
+  try{
+    localStorage.setItem(AUTO_SAVE_KEY,JSON.stringify(projectData()));
+    updateAutoSaveStatus('● Sauvegarde automatique');
+  }catch(err){
+    updateAutoSaveStatus('⚠ Sauvegarde automatique indisponible');
+  }
+}
+
+function scheduleAutoSave(){
+  clearTimeout(autoSaveTimer);
+  updateAutoSaveStatus('● Enregistrement…');
+  autoSaveTimer=setTimeout(saveAuto,250);
+}
+
+function restoreAutoSave(){
+  try{
+    const raw=localStorage.getItem(AUTO_SAVE_KEY);
+    if(!raw)return false;
+    const data=JSON.parse(raw);
+    if(data.format!=='MAX7219-BLOCS' || !Array.isArray(data.blocks) || !Array.isArray(data.functions))return false;
+    blocks=data.blocks;
+    functions=data.functions;
+    const ids=[];
+    function collect(body){
+      body.forEach(b=>{
+        if(Number.isInteger(b.id))ids.push(b.id);
+        if(Array.isArray(b.body))collect(b.body);
+      });
+    }
+    collect(blocks);
+    functions.forEach(f=>{
+      if(Number.isInteger(f.id))ids.push(f.id);
+      if(Array.isArray(f.body))collect(f.body);
+    });
+    nextId=Math.max(Number(data.nextId)||0,...ids,0)+1;
+    selectedId=null;
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+
+// ==================== ENREGISTRER / OUVRIR ====================
+function projectData(){
+  return {
+    format:'MAX7219-BLOCS',
+    version:1,
+    savedAt:new Date().toISOString(),
+    blocks:blocks,
+    functions:functions,
+    nextId:nextId
+  };
+}
+
+function saveProject(){
+  saveAuto();
+  const data=JSON.stringify(projectData(),null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='programme_ESP8266.espbloc';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('✓ Programme enregistré !');
+}
+
+function loadProject(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(data.format!=='MAX7219-BLOCS' || !Array.isArray(data.blocks) || !Array.isArray(data.functions)){
+        throw new Error('Format invalide');
+      }
+      blocks=data.blocks;
+      functions=data.functions;
+      const ids=[];
+      function collect(body){
+        body.forEach(b=>{
+          if(Number.isInteger(b.id))ids.push(b.id);
+          if(Array.isArray(b.body))collect(b.body);
+        });
+      }
+      collect(blocks);
+      functions.forEach(f=>{
+        if(Number.isInteger(f.id))ids.push(f.id);
+        if(Array.isArray(f.body))collect(f.body);
+      });
+      nextId=Math.max(Number(data.nextId)||0,...ids,0)+1;
+      selectedId=null;
+      render();
+      showToast('✓ Programme ouvert !');
+    }catch(err){
+      showToast('⚠ Fichier de programme invalide');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('saveProgram').onclick=saveProject;
+document.getElementById('openProgram').onclick=()=>document.getElementById('fileProgram').click();
+document.getElementById('fileProgram').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(file)loadProject(file);
+  e.target.value='';
+});
+
+document.getElementById('clearProgram').onclick=()=>{if(confirm('Effacer tous les blocs du programme ?')){blocks=[];selectedId=null;render()}};
+
+// Restaure automatiquement le dernier travail au chargement de la page.
+if(restoreAutoSave()){
+  render();
+  updateAutoSaveStatus('● Travail restauré automatiquement');
+} else {
+  updateAutoSaveStatus('● Sauvegarde automatique');
+}
+document.getElementById('copy').onclick=async()=>{
+  const text=document.getElementById('codeBox').textContent;
+  let copied=false;
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      copied=true;
+    }
+  }catch(e){}
+
+  if(!copied){
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.setAttribute('readonly','');
+    ta.style.position='fixed';
+    ta.style.left='-9999px';
+    ta.style.top='0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{copied=document.execCommand('copy');}catch(e){copied=false;}
+    document.body.removeChild(ta);
+  }
+
+  const toast=document.getElementById('toast');
+  toast.textContent=copied ? '✓ Code copié !' : 'Impossible de copier automatiquement';
+  toast.classList.add('show');
+  clearTimeout(window.copyToastTimer);
+  window.copyToastTimer=setTimeout(()=>toast.classList.remove('show'),1800);
+};
+render();
+</script>
+</body>
+</html>
