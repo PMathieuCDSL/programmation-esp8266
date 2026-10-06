@@ -1,0 +1,3316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Programmation ESP8266 — V4-32</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#202124;overflow:hidden}
+header{height:62px;background:#263238;color:white;display:flex;align-items:center;padding:0 18px;gap:18px;white-space:nowrap;overflow:hidden}
+.pageVersion{font-size:.55em;font-weight:700;color:#607d8b;margin-left:8px;vertical-align:middle;white-space:nowrap}
+header h1{font-size:20px;margin:0}
+header .sub{font-size:13px;opacity:.8}
+button{border:0;border-radius:7px;padding:9px 13px;font-weight:bold;cursor:pointer}
+#assignApply:not(:disabled){background:#ef6c00;color:#fff;opacity:1;cursor:pointer}#assignApply:disabled{opacity:.45;cursor:not-allowed}
+#copy{margin-left:auto;background:#43a047;color:white}
+#clearProgram{background:#eceff1}
+.app{height:calc(100vh - 62px);display:grid;grid-template-columns:235px minmax(180px,1fr) 500px;gap:0}
+.panel{background:white;border-right:1px solid #d8dde1;overflow:auto}
+.palette{padding:14px}
+.palette h2,.editor h2{font-size:15px;margin:8px 0 12px}
+.cat{font-size:12px;text-transform:uppercase;color:#607d8b;font-weight:bold;margin:17px 0 7px}
+.block{white-space:nowrap;user-select:none;cursor:grab;border-radius:9px;padding:12px;margin:8px 0;position:relative;color:white;font-weight:bold;box-shadow:0 2px 4px #0002}
+.palette .mathblock{white-space:normal;height:44px;display:flex;align-items:center;line-height:16px;gap:7px}.palette .mathblock .mathIcon{font-size:18px;line-height:1;flex:0 0 auto;display:flex;align-items:center}.palette .mathblock .mathText{display:flex;flex-direction:column;justify-content:center;line-height:15px}
+.palette .funcblock,.palette .callblock{font-size:13px;letter-spacing:-.15px}.palette .writeblock{font-size:13px;letter-spacing:-.15px}
+.palette .assignblock{font-size:13.5px;letter-spacing:-.1px}
+ .varEquationEditor{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;margin:8px 0 10px}
+.varEquationEditor input{height:36px;border:2px solid #6d4c41;border-radius:7px;padding:5px 8px;font-size:15px;background:white;min-width:0;flex:1 1 0}
+.varEquationEditor #varInitial{flex:0 0 100px;width:100px;text-align:center}
+.varApplyRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.varNameError{font-size:12px;font-weight:600;color:#b71c1c;background:#ffebee;border:1px solid #ef9a9a;border-radius:6px;padding:6px 9px}
+
+.mathEquationEditor{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;margin:8px 0 10px}
+.mathEquationEditor select,.mathEquationEditor input{height:42px;border:1px solid #b0bec5;border-radius:7px;padding:5px 9px;font-size:15px;background:white;min-width:0;color:#202124;line-height:26px}
+.mathEquationEditor select{flex:1 1 0;min-width:145px}.mathEquationEditor #mathOp{flex:0 0 46px;width:46px;min-width:46px;padding:4px 2px;text-align:center}
+.mathEquationEditor input{width:82px;flex:0 0 82px}.mathEquationEditor #mathVariable,.mathEquationEditor #mathA{border:6px solid #6d4c41;height:42px;padding:3px 7px;font-weight:600}
+.mathEquals{font-size:22px;font-weight:bold;color:#455a64}
+.mathNoVariables{font-size:13px;color:#c62828;font-weight:bold;margin:4px 0 10px}
+.callEquationEditor{display:flex;align-items:center;gap:7px;margin:8px 0 10px}
+.callEquationEditor select{height:42px;border:6px solid #c2185b;border-radius:7px;padding:3px 9px;font-size:15px;background:white;min-width:220px;color:#202124;font-weight:600;line-height:26px}
+.block:active{cursor:grabbing}
+.maxblock{background:#1976d2}.delayblock{background:#fb8c00}.clearblock{background:#546e7a}
+.help{font-size:12px;color:#607d8b;line-height:1.4;margin-top:16px}
+.workspace{padding:18px;overflow:auto;background:#eef2f5}
+.workspaceTitle{display:flex;align-items:center;justify-content:space-between}
+.workspaceTitle h2{font-size:18px;margin:0 0 12px}
+.dropzone{min-height:480px;background:white;border:3px dashed #c5cdd3;border-radius:12px;padding:16px;position:relative}
+.dropzone.empty:after{content:"Glissez des blocs ici";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#90a4ae;font-size:18px;font-weight:bold;pointer-events:none}
+.setupZone{background:#fff;border:2px solid #90a4ae;border-radius:12px;padding:10px 14px;margin-bottom:12px;min-height:62px;transition:min-height .15s,background .15s}
+.setupZone.active{background:#e3f2fd;border-color:#1976d2}
+.setupHeader{display:flex;align-items:center;gap:8px;font-weight:bold;color:#37474f;font-size:15px;margin-bottom:6px}
+.setupHint{font-size:11px;color:#78909c;font-weight:normal}
+.setupBody{min-height:24px;border-radius:8px;padding:2px}
+.setupBody.emptySetup:after{content:"Glissez ici les blocs exécutés une seule fois au démarrage";display:block;text-align:center;color:#90a4ae;font-size:12px;padding:8px}
+
+.programBlock{position:relative;border-radius:10px;color:white;margin:1px 0;padding:11px 42px 11px 42px;box-shadow:0 2px 5px #0002;cursor:pointer}
+.programBlock.selected{outline:4px solid #90caf9}
+.programBlock .blockHeader{display:flex;align-items:center;min-height:20px;padding-right:52px}.programBlock .name{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.programBlock .blockSecondRow{position:relative;display:flex;align-items:center;min-height:20px;margin-top:5px;padding-right:0}.programBlock .secondText{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.programBlock .secondDesc{margin-left:auto;font-size:12px;font-weight:600;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;max-width:55%}.programBlock .blockHeader .name{flex:1;min-width:0}.programBlock.math .blockHeader .mathIcon{font-size:19px;line-height:1;flex:0 0 auto;margin-right:8px;display:flex;align-items:center}.programBlock.math .blockHeader .mathText{display:block;line-height:20px;white-space:nowrap}.programBlock.max .blockSecondRow{padding-right:0}.programBlock.max .secondText{font-size:12px}.programBlock.read{min-height:68px;padding-top:10px;padding-bottom:10px}.programBlock.read .readSecondRow{position:relative;display:flex;align-items:center;min-height:20px;margin-top:5px;padding-right:0;width:calc(100% + 35px)}.programBlock.read .readEquation{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding-right:8px}.programBlock.read .readDesc{position:absolute;right:0;top:0;font-size:12px;font-weight:600;opacity:.95;white-space:nowrap;text-align:right;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 90px);background:transparent}.programBlock.write .blockSecondRow,.programBlock.var .blockSecondRow,.programBlock.math .blockSecondRow,.programBlock.delay .blockSecondRow,.programBlock.repeat .blockSecondRow,.programBlock.if .blockSecondRow,.programBlock.call .blockSecondRow,.programBlock.clear .blockSecondRow{padding-right:0}
+.programBlock.math .name{white-space:nowrap;line-height:20px;display:flex;align-items:center;min-height:20px}.programBlock.math .mathIcon{font-size:19px;line-height:1;flex:0 0 auto;margin-right:8px;display:flex;align-items:center}.programBlock.math .mathText{display:block;line-height:20px;white-space:nowrap}
+.programBlock .desc{font-size:12px;margin-top:4px;opacity:.92}.programBlock.read{min-height:68px;padding-top:10px;padding-bottom:10px}.programBlock.read .readSecondRow{position:relative;display:flex;align-items:center;min-height:20px;margin-top:5px;padding-right:0;width:calc(100% + 35px)}.programBlock.read .readEquation{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding-right:8px}.programBlock.read .readDesc{position:absolute;right:0;top:0;font-size:12px;font-weight:600;opacity:.95;white-space:nowrap;text-align:right;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 90px);background:transparent}
+.programBlock .delete{position:absolute;right:7px;top:7px;background:#ffffff44;color:white;border-radius:5px;padding:3px 7px}
+.programBlock .duplicate{position:absolute;right:39px;top:7px;background:#ffffff44;color:white;border-radius:5px;padding:3px 7px;cursor:pointer}.programBlock .duplicate:hover{background:#ffffff66}
+
+.functionShelf{margin-top:16px;background:#fff;border:1px solid #d8dde1;border-radius:10px;padding:12px}.functionShelf.dropTargetActive{background:#e3f2fd;border:3px dashed #1976d2}
+.functionShelf h3{margin:0 0 8px;font-size:15px}
+.functionCard{background:#fce4ec;border:2px solid #c2185b;border-radius:10px;padding:10px;margin:9px 0}
+.functionHeader{display:flex;align-items:center;gap:8px;font-weight:bold;color:#880e4f;margin:0;min-height:34px;cursor:pointer}
+.functionTitle{flex:1}
+.functionDescription{font-size:12px;color:#6d2448;margin:0 0 5px 4px;font-style:italic}
+.functionToggle{width:30px;height:30px;padding:0;border-radius:50%;background:white;border:1px solid #c2185b;color:#880e4f;font-size:17px;line-height:28px;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .15s}
+.functionToggle:hover{background:#f8bbd0}
+.functionCard.collapsed .functionToggle{transform:none}
+.blockSlot{min-height:48px;border:2px dashed #b0bec5;border-radius:8px;padding:6px;margin-top:8px;background:#fafafa}
+.functionSlot{min-height:48px}
+.blockSlot.active{border-color:#1976d2;background:#e3f2fd}
+.insertZone{height:8px;margin:0;border-radius:4px;transition:height .12s,background .12s,border .12s;position:relative;z-index:30;background:transparent;border:0}
+.insertZone.active{height:26px;background:rgba(144,202,249,.18);border:2px dashed #1976d2;margin:1px 0}
+.insertZone.endZone{height:70px;margin:0;background:transparent;border:0}
+.insertZone.endZone.active{height:70px;background:rgba(144,202,249,.20);border:2px solid #1976d2}
+.dropzone.empty .insertZone{height:420px;margin:0;border:0;background:transparent;display:block}
+.dropzone.empty .insertZone.active{background:#e3f2fd;border:3px dashed #1976d2}.programBlock.dragging{opacity:.45}.dragHandle{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:18px;line-height:1;color:#ffffffaa;cursor:grab;user-select:none}.dragHandle:active{cursor:grabbing}
+.blockSlot.emptySlot:after{content:"Glissez les blocs ici";display:block;text-align:center;color:#90a4ae;font-size:12px;padding:8px}
+/* V4-22 — Description des tiges : même couleur que le bloc du menu et format plus compact. */
+.programBlock.pinDesc{background:#455a64;padding-top:6px;padding-bottom:6px;min-height:0;}
+.programBlock.pinDesc .blockHeader{min-height:18px;}
+.programBlock.pinDesc .blockSecondRow{margin-top:2px;min-height:18px;}
+.programBlock.ioInvalid{outline:3px solid #d32f2f;box-shadow:0 0 0 2px #fff,0 0 0 5px #d32f2f}.programBlock.ioInvalid .ioErrorBadge{position:absolute;right:73px;top:6px;background:#fff;color:#c62828;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;line-height:1;cursor:help}.programBlock.ioInvalid .ioErrorMessage{margin-top:4px;color:#fff;background:#b71c1c;border-radius:5px;padding:3px 6px;font-size:11px;font-weight:700;white-space:normal;line-height:1.2}
+/* V4-22 — Description des tiges : même couleur que le bloc du menu et format plus compact. */
+.programBlock.pinDesc{background:#455a64;padding-top:6px;padding-bottom:6px;min-height:0;}
+.programBlock.pinDesc .blockHeader{min-height:18px;}
+.programBlock.pinDesc .blockSecondRow{margin-top:2px;min-height:18px;}
+.programBlock.container{padding-bottom:9px}
+.programBlock.max{background:#1976d2}.programBlock.delay{background:#fb8c00}.programBlock.clear{background:#546e7a}.programBlock.repeat{background:#8e24aa}.programBlock.if{background:#00897b}.programBlock.read{background:#3949ab}.programBlock.write{background:#00897a}.programBlock.var{background:#6d4c41}.programBlock.math{background:#5e35b1}.programBlock.assign{background:#ef6c00}.assignblock{background:#ef6c00}.programBlock.func{background:#c2185b}.programBlock.call{background:#ad1457}.programBlock.assign{background:#ef6c00}.assignblock{background:#ef6c00}
+.readblock{background:#3949ab}.writeblock{background:#00897a}.pindescblock{background:#455a64;color:#fff}.pindescblock{font-weight:700;display:block;white-space:nowrap;font-size:13px}.pinDescTitle{font-weight:700;}.varblock{background:#6d4c41}.mathblock{background:#5e35b1}.funcblock{background:#c2185b}.callblock{background:#ad1457}
+.repeatblock{background:#8e24aa}.ifblock{background:#00897b}
+.maxMiniPreview{position:absolute;left:285px;right:auto;top:50%;transform:translateY(-50%);display:flex;gap:2px;align-items:center;padding:3px;background:transparent}
+.maxMiniMatrix{display:grid;grid-template-columns:repeat(8,5px);grid-template-rows:repeat(8,5px);gap:1px;background:#455a64;padding:2px;border-radius:3px;box-sizing:content-box}
+.maxMiniMatrix + .maxMiniMatrix{position:relative}
+.maxMiniMatrix + .maxMiniMatrix::before{content:'';position:absolute;left:-2px;top:3px;bottom:3px;width:1px;background:#1976d2}
+.maxMiniCell{width:5px;height:5px;background:#263238;border:0;box-sizing:border-box}
+.maxMiniCell.on{background:#fff}
+
+.editor{padding:14px;background:#fff;overflow:auto}
+
+.ioEquationEditor{display:flex;align-items:center;gap:8px;margin:10px 0;}
+.ifEquationEditor{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:nowrap;}
+.ifEquationEditor select,.ifEquationEditor input{box-sizing:border-box;font-size:14px;padding:8px 10px;height:42px;}
+.ifEquationEditor #ifVariable{border:6px solid #6d4c41;min-width:145px;max-width:210px;font-weight:600;padding:3px 7px;}
+.ifEquationEditor #ifOp{width:62px;min-width:62px;padding:3px 7px;}
+.ifEquationEditor #ifValue{width:105px;min-width:105px;}
+.ifLabel{font-weight:700;font-size:14px;white-space:nowrap;}
+.ifElseEditor{margin-top:14px;border-top:1px solid #ddd;padding-top:10px}
+.ifElseTitle{font-weight:700;font-size:14px;margin-bottom:7px}.ifElseCheck{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;cursor:pointer}.ifElseCheck input{width:17px;height:17px;margin:0}
+.nestedSection{margin-top:6px}.nestedLabel{font-size:11px;font-weight:700;opacity:.85;margin:3px 0 3px 4px}
+
+.ioEquationEditor select,.ioEquationEditor input{box-sizing:border-box;font-size:14px;padding:8px 10px;height:38px;}
+.ioEquationEditor select{width:auto;min-width:76px;}
+.ioEquationEditor input{flex:1;min-width:120px;}
+.readEquationEditor #readVariable{border:6px solid #6d4c41;height:42px;padding:3px 7px;font-weight:600;min-width:145px;}
+.readEquationEditor #readPin{min-width:76px;}
+.readEquationEditor .ioDescription{min-width:170px;}
+.ioEquationEditor .ioDescription{min-width:150px;max-width:220px;}
+.pinDescEquationEditor select:first-child{min-width:70px}
+.pinDescEquationEditor #pinDescMode{min-width:90px}
+.pinDescEquationEditor .ioDescription{min-width:150px;max-width:240px}
+.writeEquationEditor select:last-child{min-width:86px;}
+.funcEquationEditor #funcName{border:6px solid #c2185b;height:42px;padding:3px 7px;font-weight:600;min-width:180px;color:#202124;}
+.funcEquationEditor #funcDescription{min-width:170px;max-width:220px;}
+.readEquationEditor select{min-width:76px;}
+#readPin option:disabled,#writePin option:disabled{color:#a8a8a8;background:#eeeeee;}
+
+.ioArrow{font-size:20px;font-weight:bold;color:#546e7a;line-height:1;}
+.editorBox{background:#f7f9fa;border:1px solid #d8dde1;border-radius:10px;padding:12px}
+#noSelection{color:#78909c;font-size:14px;line-height:1.5}
+#selectedInfo{display:none}
+.field{margin:10px 0}
+.field label{font-size:13px;font-weight:bold;display:block;margin-bottom:5px}
+input[type=number],select{width:100%;padding:8px;border:1px solid #b0bec5;border-radius:6px;font-size:14px}
+.matrices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.matrixWrap{background:#eceff1;border-radius:8px;padding:8px}
+.matrixWrap h3{font-size:12px;margin:0 0 6px}
+.matrix{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:#37474f;padding:3px;border-radius:5px;aspect-ratio:1}
+.cell{background:#263238;border-radius:2px;cursor:pointer}
+.cell.on{background:#fff}
+.editorActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.editorActions button{background:#cfd8dc}
+#codeBox{margin-top:12px;background:#263238;color:#e0f2f1;border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:12px;white-space:pre;overflow:auto;max-height:250px}
+#toast{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-12px);background:#263238;color:white;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:bold;box-shadow:0 3px 12px #0004;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:1000}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.autoSaveStatus{font-size:11px;color:#546e7a;margin-left:4px;white-space:nowrap;opacity:.9;display:inline-flex;align-items:center;justify-content:flex-start;width:155px;min-width:155px;flex:0 0 155px}
+.status{font-size:12px;color:#546e7a;margin-top:8px}
+@media(max-width:1350px){
+ .editor{padding:10px}
+ .editor h2{font-size:14px;margin:6px 0 9px}
+ .editorBox{padding:9px}
+ .mathEquationEditor{gap:4px}
+ .callEquationEditor{gap:4px}
+ .callEquationEditor select{height:32px;font-size:12px;padding:2px 5px;min-width:150px;border-width:4px}
+ .mathEquationEditor select,.mathEquationEditor input{height:32px;font-size:12px;padding:3px 5px}
+ .mathEquationEditor select{min-width:82px}
+ .mathEquationEditor #mathOp{flex:0 0 34px;width:34px;min-width:34px;padding:2px 0}
+ .mathEquationEditor input{width:55px;flex:0 0 55px}
+ .mathEquationEditor #mathVariable,.mathEquationEditor #mathA{height:32px;min-width:82px;border-width:4px;padding:2px 4px}
+ .mathEquals{font-size:17px}
+ .ifEquationEditor{gap:5px}
+ .ifEquationEditor select,.ifEquationEditor input{height:36px;font-size:13px;padding:4px 6px}
+ .ifEquationEditor #ifVariable{min-width:105px;max-width:140px;border-width:5px}
+ .ifEquationEditor #ifOp{width:48px;min-width:48px}
+ .ifEquationEditor #ifValue{width:70px;min-width:70px}
+ .ifLabel{font-size:13px}
+ .ioEquationEditor{gap:5px}
+ .ioEquationEditor select,.ioEquationEditor input{height:34px;font-size:13px;padding:5px 6px}
+ .readEquationEditor #readVariable{min-width:105px;height:36px;border-width:5px}
+ .readEquationEditor #readPin{min-width:60px}
+ .ioEquationEditor .ioDescription{min-width:100px;max-width:160px}
+ .readEquationEditor .ioDescription{min-width:100px}
+ .ioArrow{font-size:18px}
+ .varEquationEditor{gap:5px}
+ .varEquationEditor input{height:34px;font-size:13px}
+ .varEquationEditor #varInitial{flex-basis:75px;width:75px}
+ .editorActions button{padding:7px 10px;font-size:13px}
+}
+@media(max-width:1400px) and (min-width:951px){
+ .app{grid-template-columns:235px minmax(180px,1fr) 500px}
+ .editor{padding:9px}
+ .editor h2{font-size:14px;margin:5px 0 8px}
+ .editorBox{padding:8px}
+ .mathEquationEditor{gap:3px}
+ .callEquationEditor{gap:3px}
+ .callEquationEditor select{height:30px;font-size:12px;padding:2px 4px;min-width:120px;border-width:4px}
+ .mathEquationEditor select,.mathEquationEditor input{height:30px;font-size:12px;padding:3px 4px}
+ .mathEquationEditor select{min-width:72px}
+ .mathEquationEditor #mathVariable,.mathEquationEditor #mathA{min-width:72px;border-width:4px}
+ .mathEquationEditor #mathOp{flex-basis:32px;width:32px;min-width:32px}
+ .mathEquationEditor input{width:52px;flex-basis:52px}
+ .mathEquals{font-size:16px}
+ .ifEquationEditor{gap:3px}
+ .ifEquationEditor select,.ifEquationEditor input{height:30px;font-size:12px;padding:3px 4px}
+ .ifEquationEditor #ifVariable{min-width:72px;max-width:105px;border-width:4px}
+ .ifEquationEditor #ifOp{width:38px;min-width:38px}
+ .ifEquationEditor #ifValue{width:55px;min-width:55px}
+ .ifLabel{font-size:12px}
+ .ioEquationEditor{gap:3px}
+ .ioEquationEditor select,.ioEquationEditor input{height:30px;font-size:12px;padding:3px 4px}
+ .readEquationEditor #readVariable{min-width:72px;height:30px;border-width:4px}
+ .readEquationEditor #readPin{min-width:48px}
+ .ioEquationEditor .ioDescription{min-width:70px;max-width:120px}
+ .readEquationEditor .ioDescription{min-width:70px}
+ .ioArrow{font-size:16px}
+ .varEquationEditor{gap:4px}
+ .varEquationEditor input{height:30px;font-size:12px}
+ .varEquationEditor #varInitial{flex-basis:65px;width:65px}
+ .editorActions button{padding:6px 8px;font-size:12px}
+}
+@media(max-width:950px){
+ .app{grid-template-columns:235px 1fr}
+ .editor{grid-column:1/3;border-top:1px solid #ddd}
+ body{overflow:auto}.app{height:auto}.dropzone{min-height:350px}
+}
+
+
+.assignEquationEditor{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;margin:8px 0 10px}
+.assignEquationEditor select,.assignEquationEditor input{height:38px;border:1px solid #b0bec5;border-radius:7px;padding:5px 8px;font-size:14px;background:white;min-width:0}
+.assignEquationEditor #assignVariable{border:6px solid #6d4c41;font-weight:600;min-width:145px}
+.exprSlotEditor{min-width:110px;min-height:38px;border:2px dashed #90a4ae;border-radius:7px;padding:2px 5px;display:flex;align-items:center;background:#fff}
+.exprSlotEditor.active{border-color:#1976d2;background:#e3f2fd}
+.exprSlotEditor input{width:90px;border:0;outline:0;text-align:center;background:transparent}
+.exprSlotEditor select{border:0;outline:0;background:transparent;font-weight:600;width:100%}
+.mathExprEditor{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;margin:8px 0 10px}
+.mathExprEditor .exprSlotEditor{flex:1 1 0}
+.exprNested{background:#ede7f6;border:1px solid #7e57c2;border-radius:6px;padding:4px 7px;font-weight:bold;white-space:nowrap}
+.exprSlot{margin-top:7px;padding:5px;border:2px dashed #ffb74d;border-radius:7px;background:#fff8e1;min-height:40px;color:#6d4c41;text-align:center;font-size:12px}
+.exprSlot.active{border-color:#1976d2;background:#e3f2fd}
+.assignEquationEditor{display:flex;align-items:center;gap:7px;margin:8px 0 10px;flex-wrap:nowrap}.assignEquationEditor select{height:42px;border:6px solid #6d4c41;border-radius:7px;padding:3px 7px;font-size:15px;background:#fff;font-weight:600;min-width:145px}.exprRootSlot{min-width:150px;min-height:42px;border:2px dashed #90a4ae;border-radius:7px;padding:3px;background:#fff;display:flex;align-items:center}.assignToolsTitle{font-size:12px;font-weight:bold;color:#607d8b;margin:10px 0 5px}.assignTools{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.exprTool{border-radius:7px;padding:8px 10px;color:white;font-size:12px;font-weight:bold;cursor:grab;box-shadow:0 1px 3px #0002}.exprTool.mathTool{background:#5e35b1}.exprTool.varTool{background:#6d4c41}.exprTool:active{cursor:grabbing}.exprContainer{display:flex;align-items:center;gap:5px;min-width:0}.exprSlot{min-width:72px;min-height:34px;border:2px dashed #b0bec5;border-radius:6px;padding:2px 4px;background:#fff;display:flex;align-items:center;justify-content:center}.exprSlot.emptyExpr{background:#fafafa}.exprSlot input{width:80px;border:0;outline:0;text-align:center;background:transparent;font-size:14px}.exprNode{display:flex;align-items:center;gap:5px;background:#ede7f6;border:2px solid #7e57c2;border-radius:7px;padding:4px}.exprNode .exprRemove{border:0;background:#fff;color:#7e57c2;border-radius:50%;width:20px;height:20px;padding:0;font-weight:bold;cursor:pointer}.exprNode .exprOp{height:30px;border:1px solid #b0bec5;border-radius:5px;background:#fff;font-weight:bold}.exprVarNode{display:flex;align-items:center;gap:3px;background:#efebe9;border:2px solid #6d4c41;border-radius:7px;padding:3px 5px}
+.exprVarNode{background:#fff7ed;border:2px solid #6d4c41;border-radius:7px;padding:2px 4px}
+.exprVarNode .exprVarSelect{display:block;width:86px;min-width:86px;height:28px;border:4px solid #6d4c41;border-radius:6px;background:#fff;font-size:11px;font-weight:600;padding:0 3px;color:#333}
+.exprSlot.readyDrop{border-color:#ef6c00;background:#fff8e1}
+.exprSlot.active{border-color:#ef6c00;background:#fff3e0}
+.exprVarNode select{height:28px;border:0;background:#fff;font-weight:600;min-width:95px}.exprDropHint{font-size:11px;color:#90a4ae;white-space:nowrap;padding:0 5px}.exprNestedRow{display:flex;align-items:center;gap:5px}.exprNestedRow .exprSlot{min-width:88px}.exprRootSlot>.exprContainer{width:100%}.exprRootSlot>.exprContainer>.exprSlot{flex:1}.exprRootSlot:has(.exprContainer){border-style:solid;border-color:#b0bec5}
+.brightnessEditor{margin-top:12px;padding:10px;border:1px solid #cfd8dc;border-radius:8px;background:#f8fafb}
+.brightnessEditor h3{margin:0 0 8px;font-size:14px}
+.fadeEditor{margin-top:12px;padding:10px;border:1px solid #e7c7e7;border-radius:8px;background:#fff9ff}.fadeEditor h3{margin:0 0 8px;font-size:14px}.fadeChoices{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;width:240px}.fadeChoices label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}.fadeChoices input{width:15px;height:15px;margin:0}.fadeDuration{display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:12px}.fadeDuration input{width:100%;max-width:230px;min-height:32px;box-sizing:border-box}
+.brightnessRow{display:flex;align-items:center;gap:8px}
+.brightnessRow input[type=range]{flex:1;min-width:120px;accent-color:#8e6b65}
+.brightnessRow input[type=number]{width:58px;padding:5px;border:1px solid #b0bec5;border-radius:5px;background:#fff}
+.brightnessRow span{font-size:12px;color:#546e7a}
+
+.scrollEditor{margin-top:12px;padding:10px;border:1px solid #cfd8dc;border-radius:8px;background:#f8fafb}
+.scrollEditor h3{margin:0 0 8px;font-size:14px}
+.scrollCheck{display:flex;align-items:center;gap:7px;font-weight:600;margin-bottom:8px}
+.scrollOptions{display:none}
+.scrollOptions.active{display:block}
+.scrollRow{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.scrollRow label{display:flex;align-items:center;gap:5px;font-size:12px}
+.scrollRow select,.scrollRow input{padding:5px;border:1px solid #b0bec5;border-radius:5px;background:#fff}
+
+/* V3-6 — éditeur SI… ALORS adaptatif selon la largeur réelle */
+.ifEquationEditor{display:grid;grid-template-columns:auto minmax(110px,1fr) 62px 105px auto;align-items:center;gap:8px;margin:10px 0;white-space:nowrap;}
+.ifEquationEditor #ifVariable{width:100%;min-width:0;max-width:none;}
+.ifEquationEditor #ifOp{width:62px;min-width:0;}
+.ifEquationEditor #ifValue{width:105px;min-width:0;}
+@media(max-width:1350px){
+  .ifEquationEditor{grid-template-columns:auto minmax(80px,1fr) 50px 72px auto;gap:5px;}
+  .ifEquationEditor select,.ifEquationEditor input{height:34px;font-size:13px;padding:3px 5px;}
+  .ifEquationEditor #ifVariable{min-width:0;max-width:none;border-width:5px;}
+  .ifEquationEditor #ifOp{width:50px;min-width:0;}
+  .ifEquationEditor #ifValue{width:72px;min-width:0;}
+  .ifLabel{font-size:13px;}
+}
+@media(max-width:1100px){
+  .ifEquationEditor{grid-template-columns:auto minmax(70px,1fr) 46px 65px auto;gap:4px;}
+  .ifEquationEditor select,.ifEquationEditor input{height:32px;font-size:12px;}
+  .ifEquationEditor #ifVariable{border-width:4px;}
+  .ifEquationEditor #ifOp{width:46px;}
+  .ifEquationEditor #ifValue{width:65px;}
+  .ifLabel{font-size:12px;}
+}
+.exprTool{user-select:none;-webkit-user-select:none;cursor:grab}.exprTool:active{cursor:grabbing}.draggingExprTool{opacity:.55}
+
+/* V3-29 : éditeur d'expression compact et lisible */
+.assignEquationEditor{width:100%;box-sizing:border-box;gap:4px;align-items:center;flex-wrap:nowrap;overflow:hidden;}
+.assignEquationEditor #assignVariable{min-width:0;width:90px;flex:0 0 90px;height:30px;padding:2px 5px;font-size:12px;border-width:4px;border-radius:7px;}
+.assignEquationEditor .mathEquals{flex:0 0 auto;font-size:13px;font-weight:700;}
+.assignEquationEditor #assignExprEditor{min-width:36px;min-height:30px;flex:0 1 auto;width:max-content;max-width:calc(100% - 95px);overflow-x:auto;overflow-y:hidden;box-sizing:border-box;padding:2px 3px;}
+.exprRootSlot>.exprContainer{min-width:0;width:max-content;}
+.exprRootSlot>.exprContainer>.exprSlot{flex:0 0 auto;}
+.exprRootSlot{min-width:42px;min-height:30px;padding:2px 3px;border-width:1px;}
+.exprNode{min-width:0;max-width:none;width:max-content;box-sizing:border-box;gap:2px;padding:2px;border-width:1px;}
+.exprNode .exprSlot{min-width:34px;min-height:24px;flex:0 0 auto;box-sizing:border-box;padding:1px 2px;border-width:1px;}
+.exprNode .exprOp{flex:0 0 25px;width:25px;min-width:25px;height:24px;padding:0;font-size:12px;border-width:1px;}
+.exprNode .exprSlot input{width:32px;max-width:32px;font-size:11px;height:20px;padding:0;}
+.exprVarNode{min-width:0;max-width:none;width:max-content;gap:0;padding:2px;box-sizing:border-box;background:#fff8e1;border:2px solid #f57c00;border-radius:7px;cursor:grab;}
+.exprVarNode:active{cursor:grabbing;}
+.exprVarNode select{display:block;min-width:0;width:82px;max-width:130px;height:26px;padding:1px 5px;font-size:12px;font-weight:600;background:#fff;border:3px solid #6d4c41;border-radius:6px;box-sizing:border-box;}
+.exprNestedRow{min-width:0;flex:0 0 auto;display:flex;align-items:center;gap:2px;}
+.exprNestedRow .exprSlot{min-width:34px;}
+.exprNode .exprRemove{display:none;}
+.exprVarNode .exprRemove{display:none;}
+.exprDropHint{font-size:9px;padding:0 3px;}
+@media(max-width:950px){
+ .assignEquationEditor #assignVariable{width:76px;flex-basis:76px;}
+ .assignEquationEditor #assignExprEditor{max-width:calc(100% - 89px);}
+ .exprNode .exprSlot{min-width:30px;}
+ .exprVarNode select{width:52px;max-width:52px;font-size:10px;}
+}
+
+/* V3-30 — éditeur d'expressions compact et extensible */
+.assignEquationEditor{gap:3px;align-items:center;min-width:0;flex-wrap:nowrap;}
+.assignEquationEditor #assignVariable{flex:0 0 76px;width:76px;min-width:76px;font-size:11px;height:28px;padding:1px 3px;border-width:4px;}
+.assignEquationEditor .mathEquals{font-size:13px;flex:0 0 auto;margin:0;}
+.exprRootSlot{min-width:24px;width:max-content;max-width:100%;min-height:28px;height:auto;padding:2px 2px;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;}
+.exprRootSlot>.exprContainer{width:max-content;min-width:0;flex:0 0 auto;display:flex;align-items:center;gap:2px;}
+.exprSlot{width:max-content;min-width:24px;max-width:none;min-height:24px;height:auto;flex:0 0 auto;padding:1px 2px;box-sizing:border-box;overflow:visible;}
+.exprSlot input{width:18px;min-width:18px;max-width:none;height:20px;font-size:11px;padding:0;text-align:center;}
+.exprSlot:has(.exprVarNode),.exprSlot:has(.exprNode){min-width:0;}
+.exprNode{gap:2px;padding:2px;border-width:1px;border-radius:5px;width:max-content;flex:0 0 auto;}
+.exprNode .exprSlot{flex:0 0 auto;width:max-content;min-width:24px;}
+.exprNode .exprOp{height:22px;min-width:22px;width:22px;font-size:11px;padding:0 1px;}
+.exprVarNode{gap:1px;padding:2px 3px;border-width:1px;border-radius:5px;width:max-content;max-width:none;background:#efebe9;}
+.exprVarNode select{height:20px;min-width:30px;width:auto;max-width:none;font-size:10px;padding:0 1px;font-weight:600;border:0;background:#fff;}
+.exprNestedRow{gap:2px;display:flex;align-items:center;width:max-content;}
+.assignToolsTitle{font-size:10px;margin:6px 0 3px;}
+.exprTool{padding:5px 7px;font-size:10px;border-radius:5px;}
+/* V3-32 — proportions plus lisibles : variable et opérateur ont une vraie présence. */
+.assignEquationEditor #assignVariable{
+  width:114px; flex-basis:114px; min-width:114px;
+  height:30px; font-size:11px;
+}
+#assignExprEditor{
+  flex:0 0 auto !important;
+  width:max-content !important;
+  max-width:calc(100% - 132px) !important;
+  overflow-x:auto; overflow-y:hidden;
+}
+.exprRootSlot{
+  width:max-content; min-width:24px;
+}
+/* Un nombre seul reste très petit. */
+.exprSlot input.exprNumberInput{
+  display:block; width:18px; min-width:18px;
+}
+.exprSlot input.exprNumberInput::placeholder{color:#90a4ae;opacity:.8;}
+/* V3-37 : une variable déposée devient une vraie liste déroulante.
+   Elle reprend exactement le langage visuel de la variable de gauche,
+   mais légèrement plus petite. */
+.exprVarNode{
+  width:86px; min-width:86px; max-width:86px;
+  height:26px; box-sizing:border-box;
+  padding:0; margin:0;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:0;
+  flex:0 0 86px;
+}
+.exprVarNode select.exprVarSelect{
+  appearance:auto; -webkit-appearance:auto;
+  display:block; width:86px !important; min-width:86px !important; max-width:86px !important;
+  height:26px !important; font-size:10px; line-height:18px; padding:1px 3px; cursor:pointer;
+  text-align:left; box-sizing:border-box;
+  border:4px solid #6d4c41 !important; border-radius:6px !important;
+  background:#fff !important; color:#263238 !important; font-weight:600;
+  opacity:1 !important;
+}
+/* Le sélecteur d'opérateur est assez large pour que + − × ÷ % soient évidents. */
+.exprNode .exprOp{
+  flex:0 0 33px; width:33px; min-width:33px;
+  height:26px; font-size:13px; font-weight:700;
+}
+/* Les cases numériques restent petites, mais une case contenant une variable
+   ou une opération prend naturellement toute la place de son contenu. */
+.exprNode .exprSlot:has(.exprVarNode){min-width:114px;}
+.exprNode .exprSlot:has(.exprNode){min-width:0;}
+
+
+/* V3-48 — CSS autonome du nouvel éditeur Attribuer une valeur */
+#assignEditor .assignEquationEditor{
+  display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0;margin:8px 0 10px;
+}
+#assignEditor #assignVariable{
+  box-sizing:border-box;width:114px;min-width:114px;height:30px;
+  padding:1px 5px;font-size:11px;font-weight:600;
+  border:4px solid #6d4c41;border-radius:7px;background:#fff;
+}
+#assignEditor .mathEquals{flex:0 0 auto;font-size:13px;font-weight:700;}
+#assignEditor .assignExprFrame{
+  display:inline-flex;align-items:center;justify-content:center;
+  box-sizing:border-box;min-width:42px;min-height:32px;
+  padding:3px;border:1px solid #b0bec5;border-radius:7px;background:#fff;
+  width:max-content;max-width:calc(100% - 126px);overflow-x:auto;overflow-y:hidden;
+}
+#assignEditor .assignRootDrop{
+  display:flex;align-items:center;box-sizing:border-box;
+  min-width:30px;min-height:26px;width:max-content;max-width:none;
+  padding:1px 3px;border:2px dashed #b0bec5;border-radius:6px;background:#fafafa;
+  transition:border-color .12s,background .12s;
+}
+#assignEditor .assignRootDrop.active,
+#assignEditor .assignDropSlot.active{
+  border-color:#ef6c00;background:#fff8e1;
+}
+#assignEditor .assignRootContent,
+#assignEditor .assignSlotContent{
+  display:flex;align-items:center;min-width:0;width:max-content;
+}
+#assignEditor .assignDropSlot{
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:24px;min-height:24px;width:max-content;
+  padding:1px 2px;border:1.5px dashed #b0bec5;border-radius:5px;background:#fff;
+}
+#assignEditor .assignNumber{
+  box-sizing:border-box;width:30px;min-width:30px;height:20px;
+  border:0;outline:0;background:transparent;text-align:center;
+  font-size:11px;padding:0;color:#263238;
+}
+#assignEditor .assignNumber::placeholder{color:#90a4ae;opacity:1;font-size:10px;}
+#assignEditor .assignVariableNode{
+  display:flex;align-items:center;box-sizing:border-box;
+  min-width:0;width:max-content;padding:0;
+  background:#fff;border:5px solid #6d4c41;border-radius:7px;
+  cursor:grab;
+}
+#assignEditor .assignVariableNode:active{cursor:grabbing;}
+#assignEditor .assignVariableSelect{
+  appearance:auto;-webkit-appearance:auto;box-sizing:border-box;
+  width:86px;min-width:86px;height:26px;
+  padding:1px 3px;font-size:10px;font-weight:600;
+  border:0;border-radius:2px;background:#fff;color:#263238;
+  cursor:pointer;
+}
+#assignEditor .assignMathNode{
+  display:flex;align-items:center;gap:2px;width:max-content;min-width:0;
+  padding:2px;border:5px solid #7e57c2;border-radius:7px;background:#f3effa;
+  cursor:grab;
+}
+#assignEditor .assignMathNode:active{cursor:grabbing;}
+#assignEditor .assignOperator{
+  box-sizing:border-box;flex:0 0 37px;width:37px;min-width:37px;height:26px;
+  padding:0 2px;font-size:13px;font-weight:700;text-align:center;
+  border:1px solid #b0bec5;border-radius:5px;background:#fff;
+}
+#assignEditor .assignDragging{opacity:.5;}
+#assignEditor .assignTool{user-select:none;-webkit-user-select:none;cursor:grab;}
+#assignEditor .assignTool.selected{outline:2px solid #ffb74d;outline-offset:1px;}
+#assignEditor .assignToolsTitle{font-size:10px;margin:6px 0 3px;}
+#assignEditor .assignTools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+#assignEditor .assignTool{padding:5px 7px;font-size:10px;border-radius:5px;}
+/* V4-11 — éditeur compact du nombre de répétitions */
+#repeatEditor .repeatEquationEditor{
+  display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;margin:8px 0 10px;
+}
+#repeatEditor .repeatPrefix,#repeatEditor .repeatSuffix{font-size:13px;font-weight:700;white-space:nowrap;}
+#repeatEditor .repeatExprFrame{
+  display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:42px;min-height:32px;width:max-content;padding:3px;
+  border:1px solid #b0bec5;border-radius:7px;background:#fff;
+}
+#repeatEditor .repeatRootDrop{
+  display:flex;align-items:center;box-sizing:border-box;min-width:30px;min-height:26px;
+  width:max-content;padding:1px 3px;border:2px dashed #b0bec5;border-radius:6px;background:#fafafa;
+}
+#repeatEditor .repeatRootDrop.active{border-color:#8e24aa;background:#f9f0fc;}
+#repeatEditor .repeatNumber{
+  box-sizing:border-box;width:30px;min-width:30px;height:20px;border:0;outline:0;
+  background:transparent;text-align:center;font-size:11px;padding:0;color:#263238;
+}
+#repeatEditor .repeatVariableNode{
+  display:flex;align-items:center;box-sizing:border-box;min-width:0;width:max-content;
+  background:#fff;border:5px solid #6d4c41;border-radius:7px;cursor:grab;
+}
+#repeatEditor .repeatVariableNode:active{cursor:grabbing;}
+#repeatEditor .repeatVariableSelect{
+  appearance:auto;-webkit-appearance:auto;box-sizing:border-box;width:86px;min-width:86px;height:26px;
+  padding:1px 3px;font-size:10px;font-weight:600;border:0;border-radius:2px;background:#fff;color:#263238;cursor:pointer;
+}
+#repeatEditor .repeatDragging{opacity:.5;}
+#repeatEditor .repeatTool{user-select:none;-webkit-user-select:none;cursor:grab;padding:5px 7px;font-size:10px;font-weight:700;border-radius:5px;border:0;box-shadow:none;color:#fff;line-height:1.1;}
+#repeatEditor .repeatTool.mathTool{background:#5e35b1;}
+#repeatEditor .repeatTool.varTool{background:#6d4c41;}
+#repeatEditor .repeatTool:hover{filter:brightness(.97);}
+#delayEditor .delayEquationEditor{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0;margin:8px 0 10px;}
+#delayEditor .delayPrefix,#delayEditor .delaySuffix{font-size:13px;font-weight:700;white-space:nowrap;}
+#delayEditor .delayExprFrame{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:42px;min-height:32px;width:max-content;padding:3px;border:1px solid #b0bec5;border-radius:7px;background:#fff;}
+#delayEditor .delayRootDrop{display:flex;align-items:center;box-sizing:border-box;min-width:30px;min-height:26px;width:max-content;padding:1px 3px;border:2px dashed #b0bec5;border-radius:6px;background:#fafafa;}
+#delayEditor .delayRootDrop.active{border-color:#fb8c00;background:#fff8ef;}
+#delayEditor .delayDropSlot{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:24px;min-height:24px;width:max-content;padding:1px 2px;border:1.5px dashed #b0bec5;border-radius:5px;background:#fff;}
+#delayEditor .delayNumber{box-sizing:border-box;width:30px;min-width:30px;height:20px;border:0;outline:0;background:transparent;text-align:center;font-size:11px;padding:0;color:#263238;}
+#delayEditor .delayVariableNode{display:flex;align-items:center;box-sizing:border-box;min-width:0;width:max-content;background:#fff;border:5px solid #6d4c41;border-radius:7px;cursor:grab;}
+#delayEditor .delayVariableNode:active{cursor:grabbing;}
+#delayEditor .delayVariableSelect{appearance:auto;-webkit-appearance:auto;box-sizing:border-box;width:86px;min-width:86px;height:26px;padding:1px 3px;font-size:10px;font-weight:600;border:0;border-radius:2px;background:#fff;color:#263238;cursor:pointer;}
+#delayEditor .delayMathNode{display:flex;align-items:center;gap:2px;width:max-content;min-width:0;padding:2px;border:5px solid #7e57c2;border-radius:7px;background:#f3effa;cursor:grab;}
+#delayEditor .delayMathNode:active{cursor:grabbing;}
+#delayEditor .delayOperator{box-sizing:border-box;flex:0 0 37px;width:37px;min-width:37px;height:26px;padding:0 2px;font-size:13px;font-weight:700;text-align:center;border:1px solid #b0bec5;border-radius:5px;background:#fff;}
+#delayEditor .delayDragging{opacity:.5;}
+#delayEditor .delayTool{user-select:none;-webkit-user-select:none;cursor:grab;padding:5px 7px;font-size:10px;font-weight:700;border-radius:5px;border:0;box-shadow:none;color:#fff;line-height:1.1;}
+#delayEditor .delayTool.mathTool{background:#5e35b1;}
+#delayEditor .delayTool.varTool{background:#6d4c41;}
+#delayEditor .delayTool:hover{filter:brightness(.97);}
+#ifEditor .ifTool{user-select:none;-webkit-user-select:none;cursor:grab;padding:5px 7px;font-size:10px;font-weight:700;border-radius:5px;border:0;box-shadow:none;color:#fff;line-height:1.1;}
+#ifEditor .ifTool.mathTool{background:#5e35b1;}
+#ifEditor .ifTool.varTool{background:#6d4c41;}
+#ifEditor .ifTool:hover{filter:brightness(.97);}
+#ifEditor .ifTool.selected{outline:2px solid #ffb74d;outline-offset:1px;}
+/* V4-12 — même géométrie que l'éditeur Attribuer une valeur */
+#ifEditor .ifExprFrame{
+  display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:42px;min-height:32px;width:max-content;max-width:calc(100% - 168px);
+  padding:3px;border:1px solid #b0bec5;border-radius:7px;background:#fff;
+  overflow-x:auto;overflow-y:hidden;
+}
+#ifEditor .ifRootDrop{
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:30px;min-height:26px;width:max-content;max-width:none;
+  padding:1px 3px;border:2px dashed #b0bec5;border-radius:6px;background:#fafafa;
+  transition:border-color .12s,background .12s;
+}
+#ifEditor .ifRootDrop.active,#ifEditor .ifDropSlot.active{border-color:#00897b;background:#eefaf8;}
+#ifEditor .ifDropSlot{
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:24px;min-height:24px;width:max-content;
+  padding:1px 2px;border:1.5px dashed #b0bec5;border-radius:5px;background:#fff;
+}
+#ifEditor .ifNumber{box-sizing:border-box;width:30px;min-width:30px;height:20px;border:0;outline:0;text-align:center;background:transparent;font-size:11px;padding:0;color:#263238;}
+#ifEditor .ifVariableNode{
+  display:flex;align-items:center;box-sizing:border-box;min-width:0;width:max-content;padding:0;
+  background:#fff;border:5px solid #6d4c41;border-radius:7px;cursor:grab;
+}
+#ifEditor .ifVariableNode:active{cursor:grabbing;}
+#ifEditor .ifVariableSelect{
+  appearance:auto;-webkit-appearance:auto;box-sizing:border-box;
+  width:86px;min-width:86px;height:26px;padding:1px 3px;font-size:10px;font-weight:600;
+  border:0;border-radius:2px;background:#fff;color:#263238;cursor:pointer;
+}
+#ifEditor .ifDragging{opacity:.5;}
+#ifEditor .ifMathNode{
+  display:flex;align-items:center;gap:2px;width:max-content;min-width:0;
+  padding:2px;border:5px solid #7e57c2;border-radius:7px;background:#f3effa;cursor:grab;
+}
+#ifEditor .ifMathNode:active{cursor:grabbing;}
+#ifEditor .ifOperator{
+  box-sizing:border-box;flex:0 0 37px;width:37px;min-width:37px;height:26px;
+  padding:0 2px;font-size:13px;font-weight:700;text-align:center;
+  border:1px solid #b0bec5;border-radius:5px;background:#fff;color:#263238;
+}
+#ifEditor .ifEquationEditor{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0;margin:8px 0 10px;}
+#ifEditor .ifLabel{font-size:13px;font-weight:700;white-space:nowrap;}
+#ifEditor #ifVariable{
+  box-sizing:border-box;width:114px;min-width:114px;height:30px;
+  padding:1px 5px;font-size:11px;font-weight:600;
+  border:4px solid #6d4c41;border-radius:7px;background:#fff;
+}
+#ifEditor #ifOp{
+  box-sizing:border-box;width:37px;min-width:37px;height:30px;
+  padding:1px 2px;font-size:13px;font-weight:700;
+  border:1px solid #b0bec5;border-radius:5px;background:#fff;color:#263238;
+}
+
+#repeatEditor .repeatTool.selected{outline:2px solid #ffb74d;outline-offset:1px;}
+#repeatEditor .repeatMathNode{display:flex;align-items:center;box-sizing:border-box;gap:4px;min-width:0;width:max-content;padding:3px 4px;background:#ede7f6;border:3px solid #5e35b1;border-radius:7px;cursor:grab;}
+#repeatEditor .repeatMathNode:active{cursor:grabbing;}
+#repeatEditor .repeatDropSlot{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:32px;min-height:27px;width:max-content;padding:1px 3px;border:2px dashed #b0bec5;border-radius:6px;background:#fff;}
+#repeatEditor .repeatDropSlot.active{border-color:#8e24aa;background:#f9f0fc;}
+#repeatEditor .repeatOperator{width:37px;min-width:37px;height:27px;padding:1px 2px;font-size:12px;font-weight:700;border:1px solid #b0bec5;border-radius:5px;background:#fff;color:#263238;}
+@media(max-width:950px){
+  #assignEditor #assignVariable{width:100px;min-width:100px;}
+  #assignEditor .assignExprFrame{max-width:calc(100% - 112px);}
+  #assignEditor .assignVariableSelect{width:76px;min-width:76px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Programmation ESP8266 <span class="pageVersion">V4-32</span></h1>
+  <div class="sub">Interface en blocs — NodeMCU ESP8266</div>
+  <button id="saveProgram">💾 Enregistrer</button>
+  <button id="openProgram">📂 Ouvrir</button>
+  <input id="fileProgram" type="file" accept=".espbloc,.json,application/json" style="display:none">
+  <button id="clearProgram">Effacer le programme</button>
+  <button id="copy">📋 COPIER LE CODE ARDUINO</button>
+  <span id="autoSaveStatus" class="autoSaveStatus">● Sauvegarde automatique</span>
+</header>
+
+<div class="app">
+  <aside class="panel palette">
+    <h2>Blocs</h2>
+    <div class="cat">Affichage</div>
+    <div class="block maxblock" draggable="true" data-type="max">💡 Matrice lumineuse</div>
+    <div class="block clearblock" draggable="true" data-type="clear">⬛ Effacer les matrices</div>
+
+    <div class="cat">Temps</div>
+    <div class="block delayblock" draggable="true" data-type="delay">⏱ Délai</div>
+
+    <div class="cat">Entrées / sorties</div>
+    <div class="block pindescblock" draggable="true" data-type="pinDesc">📌 Description des tiges</div>
+    <div class="block readblock" draggable="true" data-type="read">🔎 Lire une entrée</div>
+    <div class="block writeblock" draggable="true" data-type="write">🔌 Commander une sortie</div>
+
+    <div class="cat">Variables et calculs</div>
+    <div class="block varblock" draggable="true" data-type="var">📦 Créer une variable</div>
+    <div class="block assignblock" draggable="true" data-type="assign">🟧 Attribuer une valeur</div>
+
+    <div class="cat">Contrôle</div>
+    <div class="block repeatblock" draggable="true" data-type="repeat">🔁 Répéter</div>
+    <div class="block ifblock" draggable="true" data-type="if">❓ SI… ALORS</div>
+
+    <div class="cat">Fonctions</div>
+    <div class="block funcblock" draggable="true" data-type="func">🔧 Définir une fonction</div>
+    <div class="block callblock" draggable="true" data-type="call">▶ Appeler une fonction</div>
+
+    <div class="help">
+      <b>Comment faire ?</b><br>
+      1. Faites glisser un bloc dans la zone centrale.<br>
+      2. Cliquez sur un bloc MAX7219 pour dessiner le motif à droite.<br>
+      3. Ajoutez des délais entre les motifs.<br>
+      4. L'ordre des blocs correspond à l'ordre d'exécution.<br>
+      5. Utilisez <b>Répéter</b> pour créer une boucle Arduino.<br>
+      6. Utilisez <b>Lire une entrée</b> et <b>Commander une sortie</b> pour les entrées/sorties.<br>
+      7. Créez des <b>variables</b> et attribuez-leur des valeurs ou des calculs.<br>
+      8. Glissez <b>Définir une fonction</b> directement dans la section Fonctions.<br>
+      9. Copiez ensuite le code dans Arduino IDE.
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <div class="workspaceTitle"><h2>Programme</h2><span class="status" id="count"></span></div><div class="status">⋮⋮ = déplacer un bloc • La zone entre deux blocs s’agrandit lorsque vous arrivez dessus.</div>
+    <div id="setupZone" class="setupZone">
+      <div class="setupHeader">⚙️ SETUP <span class="setupHint">Exécuté une seule fois au démarrage</span></div>
+      <div id="setupBody" class="setupBody emptySetup"></div>
+    </div>
+    <div id="mainZone" class="setupZone">
+      <div class="setupHeader">🔁 BOUCLE PRINCIPALE <span class="setupHint">Exécutée en continu</span></div>
+      <div id="dropzone" class="dropzone empty"></div>
+    </div>
+    <h2 style="font-size:16px;margin:18px 0 8px">Code Arduino généré</h2>
+    <div class="status">Le code est volontairement simple : chaque matrice est regroupée séparément et chaque DEL est représentée par un octet binaire.</div>
+    <div id="codeBox"></div>
+  </main>
+
+  <div id="toast">Code copié !</div>
+
+  <aside class="editor">
+    <h2>Éditeur du bloc</h2>
+    <div class="editorBox">
+      <div id="noSelection">Sélectionnez un bloc <b>MAX7219</b> dans le programme pour dessiner son motif dans les quatre matrices.</div>
+      <div id="selectedInfo">
+        <div id="selectedTitle" style="font-weight:bold;font-size:16px;margin-bottom:8px"></div>
+        <div id="maxEditor">
+          <div class="matrices" id="matrices"></div>
+          <div class="editorActions">
+            <button onclick="fillAll(false)">Tout éteindre</button>
+            <button onclick="fillAll(true)">Tout allumer</button>
+            <button onclick="invertAll()">Inverser</button>
+          </div>
+          <div class="brightnessEditor">
+            <h3>☀️ Luminosité</h3>
+            <div class="brightnessRow">
+              <input id="maxBrightnessRange" type="range" min="0" max="15" step="1" value="8" aria-label="Luminosité">
+              <input id="maxBrightnessValue" type="number" min="0" max="15" step="1" value="8" aria-label="Valeur de luminosité">
+              <span>/ 15</span>
+            </div>
+            <div class="status">0 = éteint · 15 = luminosité maximale</div>
+          </div>
+          <div class="fadeEditor">
+            <h3>✨ Effet de luminosité</h3>
+            <div class="fadeChoices">
+              <label><span>Apparition progressive</span><input id="maxFadeIn" type="checkbox"></label>
+            </div>
+            <label class="fadeDuration">Durée de l'effet (ms)
+              <input id="maxFadeSpeed" type="number" min="0" step="10" value="50">
+            </label>
+
+          </div>
+          <div class="scrollEditor">
+            <h3>↔️ Faire défiler le motif</h3>
+            <label class="scrollCheck"><input type="checkbox" id="maxScrollEnabled"> Activer le défilement</label>
+            <div id="scrollOptions" class="scrollOptions">
+              <div class="scrollRow">
+                <label>Direction
+                  <select id="maxScrollDirection">
+                    <option value="right">→ Droite</option>
+                    <option value="left">← Gauche</option>
+                    <option value="up">↑ Haut</option>
+                    <option value="down">↓ Bas</option>
+                  </select>
+                </label>
+                <label>Déplacement
+                  <input id="maxScrollStep" type="number" min="1" max="8" step="1" value="1"> case(s)
+                </label>
+              </div>
+              <div class="scrollRow">
+                <label>Vitesse
+                  <input id="maxScrollSpeed" type="number" min="0" step="10" value="100"> ms
+                </label>
+                <label>Nombre de déplacements
+                  <input id="maxScrollCount" type="number" min="1" max="64" step="1" value="32">
+                </label>
+                <label class="scrollCheck" style="margin:0"><input type="checkbox" id="maxScrollLoop"> En boucle</label>
+              </div>
+            </div>
+            <div class="status">Le motif dessiné ci-dessus est déplacé sur les 4 matrices comme un seul écran de 32 × 8 DEL.</div>
+          </div>
+        </div>
+        <div id="delayEditor" style="display:none">
+          <div class="delayEquationEditor">
+            <span class="delayPrefix">Délai</span>
+            <div id="delayExprEditor" class="delayExprFrame"></div>
+            <span class="delaySuffix">ms</span>
+          </div>
+          <div id="delayNoVariables" class="mathNoVariables">Créer une variable pour pouvoir l'utiliser ici.</div>
+          <div class="assignToolsTitle">Blocs disponibles</div>
+          <div id="delayTools" class="assignTools">
+            <div class="exprTool delayTool mathTool" draggable="true" data-delay-expr-tool="math">➗ Opération mathématique</div>
+            <div class="exprTool delayTool varTool" draggable="true" data-delay-expr-tool="variable">🟤 Variable</div>
+          </div>
+          <button id="delayApply" onclick="applyDelay()">Appliquer</button>
+          <div class="status">Écrivez un nombre ou glissez une variable. Le délai est exprimé en millisecondes.</div>
+        </div>
+
+        <div id="repeatEditor" style="display:none">
+          <div class="repeatEquationEditor">
+            <span class="repeatPrefix">Répéter</span>
+            <div id="repeatExprEditor" class="repeatExprFrame"></div>
+            <span class="repeatSuffix">fois</span>
+          </div>
+          <div id="repeatNoVariables" class="mathNoVariables">Créer une variable pour pouvoir l'utiliser ici.</div>
+          <div class="assignToolsTitle">Blocs disponibles</div>
+          <div id="repeatTools" class="assignTools">
+            <div class="exprTool repeatTool mathTool" draggable="true" data-repeat-expr-tool="math">➗ Opération mathématique</div>
+            <div class="exprTool repeatTool varTool" draggable="true" data-repeat-expr-tool="variable">🟤 Variable</div>
+          </div>
+          <button id="repeatApply" onclick="applyRepeat()">Appliquer</button>
+          <div class="status">Écrivez un nombre ou glissez une variable. Le nombre de répétitions doit être entier.</div>
+        </div>
+
+        <div id="clearEditor" style="display:none">
+          <div class="fadeEditor">
+            <h3>✨ Effet d'effacement</h3>
+            <div class="fadeChoices">
+              <label><span>Disparition progressive</span><input id="clearFadeOut" type="checkbox"></label>
+            </div>
+            <label class="fadeDuration">Durée de l'effet (ms)
+              <input id="clearFadeSpeed" type="number" min="0" step="10" value="500">
+            </label>
+          </div>
+        </div>
+
+        <div id="ifEditor" style="display:none">
+          <div class="ifEquationEditor">
+            <span class="ifLabel">Si</span>
+            <select id="ifVariable" aria-label="Variable à comparer"></select>
+            <select id="ifOp" aria-label="Opérateur de comparaison">
+              <option value="==">=</option>
+              <option value="!=">≠</option>
+              <option value="<">&lt;</option>
+              <option value=">">&gt;</option>
+              <option value="<=">≤</option>
+              <option value=">=">≥</option>
+            </select>
+            <div id="ifExprEditor" class="ifExprFrame"></div>
+            <span class="ifLabel">Alors</span>
+          </div>
+          <div id="ifNoVariables" class="mathNoVariables">Créer une variable.</div>
+          <div class="assignToolsTitle">Blocs disponibles</div>
+          <div id="ifTools" class="assignTools">
+            <div class="exprTool ifTool mathTool" draggable="true" data-if-expr-tool="math">➗ Opération mathématique</div>
+            <div class="exprTool ifTool varTool" draggable="true" data-if-expr-tool="variable">🟤 Variable</div>
+          </div>
+          <button id="ifApply" onclick="applyIf()">Appliquer</button>
+          <div class="ifElseEditor">
+            <label class="ifElseCheck"><input type="checkbox" id="ifElseEnabled"> <span>Sinon</span></label>
+          </div>
+          <div class="status">Écrivez un nombre ou glissez un bloc. Exemple : <b>Si temperature &gt; 25 Alors</b>.</div>
+        </div>
+
+        <div id="pinDescEditor" style="display:none">
+          <div class="ioEquationEditor pinDescEquationEditor">
+            <select id="pinDescPin" aria-label="Tige à décrire"></select>
+            <select id="pinDescMode" aria-label="Type de tige">
+              <option value="input">Entrée</option>
+              <option value="output">Sortie</option>
+            </select>
+            <input id="pinDescText" class="ioDescription" value="" placeholder="Description" aria-label="Description de la tige">
+          </div>
+          <div id="pinDescHelp" class="status">Définissez chaque tige avant de l'utiliser dans Lire une entrée ou Commander une sortie. D4, D5 et D7 sont réservées à la matrice lumineuse.</div>
+          <button onclick="applyPinDescription()">Appliquer</button>
+        </div>
+
+        <div id="readEditor" style="display:none">
+          <div class="ioEquationEditor readEquationEditor">
+            <select id="readVariable" aria-label="Variable qui reçoit le résultat"></select>
+            <span class="mathEquals">=</span>
+            <select id="readPin" aria-label="Broche à lire">
+              <option value="" disabled hidden></option>
+              <option value="0">D0</option><option value="1">D1</option><option value="2">D2</option>
+              <option value="5">D5</option><option value="6">D6</option><option value="7">D7</option>
+            </select>
+          </div>
+          <div id="readNoVariables" class="mathNoVariables">Créer une variable.</div>
+          <div class="status">Seules les tiges définies comme <b>Entrée</b> dans Description des tiges sont disponibles ici.</div>
+          <button id="readApply" onclick="applyRead()">Appliquer</button>
+        </div>
+
+        <div id="writeEditor" style="display:none">
+          <div class="ioEquationEditor writeEquationEditor">
+            <select id="writePin" aria-label="Broche de sortie">
+              <option value="" disabled hidden></option>
+              <option value="0">D0</option><option value="1">D1</option><option value="2">D2</option>
+              <option value="3">D3</option><option value="4">D4</option><option value="5">D5</option>
+              <option value="6">D6</option><option value="7">D7</option><option value="8">D8</option>
+            </select>
+            <span class="mathEquals">=</span>
+            <select id="writeValue" aria-label="Valeur de sortie">
+              <option>HIGH</option><option>LOW</option>
+            </select>
+          </div>
+          <div class="status">Seules les tiges définies comme <b>Sortie</b> dans Description des tiges sont disponibles ici.</div>
+          <button id="writeApply" onclick="applyWrite()">Appliquer</button>
+        </div>
+
+        <div id="varEditor" style="display:none">
+          <div class="varEquationEditor">
+            <input id="varName" value="maVariable" aria-label="Nom de la variable">
+            <span class="mathEquals">=</span>
+            <input id="varInitial" type="number" value="0" step="any" aria-label="Valeur initiale">
+          </div>
+          <div class="varApplyRow">
+            <button onclick="applyVar()">Appliquer</button>
+            <div id="varNameError" class="varNameError" role="alert" aria-live="polite" style="display:none">⛔ Ce nom de variable est déjà utilisé. Choisissez un autre nom.</div>
+          </div>
+        </div>
+
+        <div id="assignEditor" style="display:none">
+          <div class="assignEquationEditor">
+            <select id="assignVariable" aria-label="Variable à modifier"></select>
+            <span class="mathEquals">=</span>
+            <div id="assignExprEditor" class="exprRootSlot"></div>
+          </div>
+          <div id="assignNoVariables" class="mathNoVariables">Créer une variable.</div>
+          <div class="assignToolsTitle">Blocs disponibles</div>
+          <div class="assignTools">
+            <div class="exprTool assignTool mathTool" draggable="true" data-expr-tool="math">➗ Opération mathématique</div>
+            <div class="exprTool assignTool varTool" draggable="true" data-expr-tool="variable">🟤 Variable</div>
+          </div>
+          <button id="assignApply" onclick="applyAssign()">Appliquer</button>
+          <div class="status">Écrivez un nombre ou glissez un bloc. Pour supprimer un élément, glissez-le hors de l’opération.</div>
+        </div>
+
+        <div id="mathEditor" style="display:none">
+          <div class="mathExprEditor">
+            <div id="mathExprAEditor" class="exprSlotEditor" data-side="a"></div>
+            <select id="mathOp" aria-label="Opération">
+              <option value="+">+</option>
+              <option value="-">−</option>
+              <option value="*">×</option>
+              <option value="/">÷</option>
+              <option value="%">%</option>
+            </select>
+            <div id="mathExprBEditor" class="exprSlotEditor" data-side="b"></div>
+          </div>
+          <div id="mathNoVariables" class="mathNoVariables">Créer une variable si vous souhaitez utiliser une variable.</div>
+          <button id="mathApply" onclick="applyMath()">Appliquer</button>
+          <div class="status">Chaque case peut contenir un nombre, une variable ou une autre opération mathématique.</div>
+        </div>
+
+        <div id="funcEditor" style="display:none">
+          <div class="ioEquationEditor funcEquationEditor">
+            <input id="funcName" value="maFonction" aria-label="Nom de la fonction" placeholder="Nom de la fonction">
+            <input id="funcDescription" class="ioDescription" value="" aria-label="Description" placeholder="Description">
+          </div>
+          <button onclick="applyFunc()">Appliquer</button>
+          <div class="status">Le nom identifie la fonction. La description permet d'indiquer son rôle.</div>
+        </div>
+
+        <div id="callEditor" style="display:none">
+          <div class="callEquationEditor">
+            <select id="callName" aria-label="Fonction à appeler"></select>
+          </div>
+          <div id="callNoFunctions" class="mathNoVariables">Créer une fonction.</div>
+          <button id="callApply" onclick="applyCall()">Appliquer</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+let blocks=[];
+let setupBlocks=[];
+let selectedId=null;
+let nextId=1;
+
+function emptyFrame(){
+  return Array.from({length:4},()=>Array.from({length:8},()=>Array(8).fill(false)));
+}
+let functions=[];
+
+function uniqueVariableName(base='maVariable'){
+  const used=new Set(getDeclaredVariableNames());
+  if(!used.has(base)) return base;
+  let n=2;
+  while(used.has(base+n)) n++;
+  return base+n;
+}
+
+function variableNameExists(name,excludeId=null){
+  const target=String(name||'').trim();
+  if(!target)return false;
+  let found=false;
+  function collect(body){
+    (body||[]).forEach(b=>{
+      if(b.type==='var' && b.id!==excludeId && String(b.name||'').trim()===target) found=true;
+      if(b.type==='repeat'||b.type==='if') collect(b.body);
+      if(b.type==='if') collect(b.elseBody);
+    });
+  }
+  collect(setupBlocks);
+  collect(blocks);
+  functions.forEach(f=>collect(f.body));
+  return found;
+}
+
+const READABLE_PINS=[0,1,2,5,6,7];
+const ALL_DIGITAL_PINS=[0,1,2,3,4,5,6,7,8];
+// Tiges réservées à la matrice lumineuse MAX7219 : DIN=D7, CLK=D5, CS=D4.
+const MATRIX_PINS=[4,5,7];
+function pinIsMatrixReserved(pin){ return MATRIX_PINS.includes(Number(pin)); }
+function matrixIsUsed(){
+  let found=false;
+  function collect(body){
+    (body||[]).forEach(b=>{
+      if(b.type==='max') found=true;
+      if(b.body) collect(b.body);
+      if(b.elseBody) collect(b.elseBody);
+    });
+  }
+  collect(setupBlocks); collect(blocks); functions.forEach(f=>collect(f.body));
+  return found;
+}
+function pinCanRead(pin){ return READABLE_PINS.includes(Number(pin)); }
+function getPinDefinitions(excludeId=null){
+  const defs=new Map();
+  function collect(body){
+    (body||[]).forEach(b=>{
+      if(b.type==='pinDesc' && b.id!==excludeId && Number.isFinite(Number(b.pin))){
+        defs.set(Number(b.pin),{mode:b.mode==='output'?'output':'input',description:String(b.description||'')});
+      }
+      if(b.body) collect(b.body);
+      if(b.elseBody) collect(b.elseBody);
+    });
+  }
+  collect(setupBlocks); collect(blocks); functions.forEach(f=>collect(f.body));
+  return defs;
+}
+function getPinDescription(pin){
+  const defs=getPinDefinitions();
+  return defs.get(Number(pin))?.description||'';
+}
+function getDefinedPins(mode,excludeId=null){
+  const defs=getPinDefinitions(excludeId);
+  return ALL_DIGITAL_PINS.filter(pin=>{
+    const d=defs.get(pin);
+    return d && d.mode===mode;
+  });
+}
+function getAvailablePinDescriptionPins(currentPin){
+  const defs=getPinDefinitions(selectedId);
+  const matrixUsed=matrixIsUsed();
+  return ALL_DIGITAL_PINS.filter(pin=>{ if(matrixIsUsed() && pinIsMatrixReserved(pin) && pin!==Number(currentPin)) return false; return !defs.has(pin) || pin===Number(currentPin); });
+}
+function populatePinDescriptionEditor(b){
+  const pinSel=document.getElementById('pinDescPin');
+  const modeSel=document.getElementById('pinDescMode');
+  const desc=document.getElementById('pinDescText');
+  pinSel.innerHTML='';
+  const emptyOpt=document.createElement('option');
+  emptyOpt.value='';
+  emptyOpt.textContent='';
+  pinSel.appendChild(emptyOpt);
+  const matrixUsed=matrixIsUsed();
+  getAvailablePinDescriptionPins(b.pin).forEach(pin=>{
+    const o=document.createElement('option');
+    o.value=String(pin); o.textContent='D'+pin;
+    if(matrixUsed && pinIsMatrixReserved(pin)){
+      o.disabled=true;
+      o.title='Cette tige est réservée à la matrice lumineuse MAX7219.';
+    }
+    pinSel.appendChild(o);
+  });
+  if(getAvailablePinDescriptionPins(b.pin).length===0){
+    const o=document.createElement('option'); o.value=''; o.textContent='Toutes les tiges sont déjà définies'; pinSel.appendChild(o);
+    pinSel.disabled=true; modeSel.disabled=true; desc.disabled=true; return;
+  }
+  pinSel.disabled=false; desc.disabled=false;
+  const currentIsAvailable = Number.isFinite(Number(b.pin)) && getAvailablePinDescriptionPins(b.pin).includes(Number(b.pin));
+  if(currentIsAvailable) pinSel.value=String(b.pin);
+  else { b.pin=''; pinSel.value=''; }
+  const syncMode=()=>{
+    const pinValue=pinSel.value;
+    const hasPin=pinValue!=='';
+    const pin=Number(pinValue);
+    const inputOpt=modeSel.querySelector('option[value="input"]');
+    const outputOpt=modeSel.querySelector('option[value="output"]');
+    const readable=hasPin && pinCanRead(pin);
+    inputOpt.disabled=hasPin && !readable;
+    modeSel.disabled=!hasPin;
+    if(!hasPin){
+      modeSel.value='input';
+      desc.value='';
+      return;
+    }
+    if(!readable){ modeSel.value='output'; b.mode='output'; }
+    else { modeSel.value=(b.mode==='output'?'output':'input'); }
+    desc.value=b.description||'';
+  };
+  pinSel.onchange=()=>{
+    if(pinSel.value===''){ b.pin=''; b.description=''; }
+    else { b.pin=Number(pinSel.value); b.description=''; }
+    syncMode();
+  };
+  modeSel.onchange=()=>{ b.mode=modeSel.value; };
+  syncMode();
+}
+function applyPinDescription(){
+  const b=getSelectedBlock(); if(!b||b.type!=='pinDesc')return;
+  const pinValue=document.getElementById('pinDescPin').value;
+  if(pinValue==='')return;
+  const pin=Number(pinValue);
+  if(!Number.isFinite(pin))return;
+  const defs=getPinDefinitions(b.id);
+  if(defs.has(pin))return;
+  const mode=document.getElementById('pinDescMode').value;
+  if(matrixIsUsed() && pinIsMatrixReserved(pin)) return;
+  if(!pinCanRead(pin) && mode==='input'){ document.getElementById('pinDescMode').value='output'; b.mode='output'; }
+  else b.mode=mode;
+  b.pin=pin;
+  b.description=document.getElementById('pinDescText').value.trim();
+  render();
+}
+
+// Une tige ne peut pas être utilisée à la fois pour une entrée et une sortie.
+// Plusieurs blocs du même type peuvent toutefois utiliser la même tige.
+function getConflictingDigitalPins(currentType,excludeId=null){
+  const conflictType=currentType==='read'?'write':'read';
+  const used=new Set();
+  function collect(body){
+    (body||[]).forEach(b=>{
+      if(b.id!==excludeId && b.type===conflictType && Number.isFinite(Number(b.pin))){
+        used.add(Number(b.pin));
+      }
+      if(b.body) collect(b.body);
+      if(b.elseBody) collect(b.elseBody);
+    });
+  }
+  collect(setupBlocks);
+  collect(blocks);
+  functions.forEach(f=>collect(f.body));
+  return used;
+}
+
+function updateDigitalPinOptions(currentType,currentPin){
+  const used=getConflictingDigitalPins(currentType,selectedId);
+  const definedInput=new Set(getDefinedPins('input',null));
+  const definedOutput=new Set(getDefinedPins('output',null));
+  ['readPin','writePin'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    const targetType=id==='readPin'?'input':'output';
+    const defined=targetType==='input'?definedInput:definedOutput;
+    Array.from(sel.options).forEach(opt=>{
+      const pin=Number(opt.value);
+      const hasCurrentPin=currentPin!=='' && currentPin!==null && currentPin!==undefined;
+      const isCurrent=currentType===((id==='readPin')?'read':'write') && hasCurrentPin && pin===Number(currentPin);
+      const notDefined=!defined.has(pin) && !isCurrent;
+      const reserved=used.has(pin) && !isCurrent;
+      const matrixReserved=matrixIsUsed() && pinIsMatrixReserved(pin) && !isCurrent;
+      opt.disabled=notDefined||reserved||matrixReserved;
+      if(matrixReserved) opt.title='Cette tige est réservée à la matrice lumineuse MAX7219.';
+      else if(reserved) opt.title='Cette tige est déjà utilisée par un autre bloc.';
+      else if(notDefined) opt.title='Définissez d’abord cette tige dans Description des tiges.';
+      else if(isCurrent && pinIsMatrixReserved(pin)) opt.title='⚠ Cette tige est réservée à la matrice lumineuse MAX7219.';
+      else if(isCurrent && currentType==='read' && !defined.has(pin)) opt.title='⚠ Cette tige n’est plus une entrée.';
+      else if(isCurrent && currentType==='write' && !defined.has(pin)) opt.title='⚠ Cette tige n’est plus une sortie.';
+      else opt.title='';
+    });
+    const available=Array.from(sel.options).some(o=>!o.disabled && o.value!=='');
+    sel.disabled=!available;
+    const apply=document.getElementById(id==='readPin'?'readApply':'writeApply');
+    if(apply) apply.disabled=!available || sel.value==='';
+  });
+  const readApply=document.getElementById('readApply');
+  const writeApply=document.getElementById('writeApply');
+  if(readApply) readApply.title=getDefinedPins('input').length?'':'Définissez d’abord une tige comme Entrée.';
+  if(writeApply) writeApply.title=getDefinedPins('output').length?'':'Définissez d’abord une tige comme Sortie.';
+}
+
+function makeBlock(type){
+  const b={id:nextId++,type};
+  if(type==='max'){ b.frame=emptyFrame(); b.brightness=8; b.fadeEffect='none'; b.fadeSpeed=50; b.fadeOut=false; b.scrollEnabled=false; b.scrollLoop=false; b.scrollDirection='right'; b.scrollStep=1; b.scrollSpeed=100; b.scrollCount=32; }
+  if(type==='delay') b.ms=500;
+  if(type==='repeat'){ b.times=5; b.timesExpr={kind:'value',value:'5'}; b.body=[]; }
+  if(type==='if'){ b.variable='maVariable'; b.op='>'; b.value='0'; b.valueExpr={kind:'value',value:'0'}; b.body=[]; b.elseBody=[]; b.elseEnabled=false; }
+  if(type==='pinDesc'){ b.pin=''; b.mode='input'; b.description=''; }
+  if(type==='read'){ b.pin=''; b.variable=''; b.description=''; }
+  if(type==='write'){ b.pin=''; b.value='HIGH'; b.description=''; }
+  if(type==='var'){ b.name=uniqueVariableName('maVariable'); b.value='0'; }
+  if(type==='assign'){ b.variable='maVariable'; b.expr={kind:'value',value:'0'}; }
+  if(type==='math'){ b.a={kind:'value',value:'1'}; b.op='+'; b.b={kind:'value',value:'1'}; }
+  if(type==='call') b.name='maFonction';
+  return b;
+}
+
+function addBlock(type,targetBody=blocks){
+  if(type==='func'){
+    const f={id:nextId++,name:'maFonction',body:[]};
+    functions.push(f);
+    f.collapsed=false;
+    selectedId=f.id;
+    render();
+    return;
+  }
+  const b=makeBlock(type);
+  if((type==='var'||type==='pinDesc') && targetBody!==setupBlocks) targetBody=setupBlocks;
+  targetBody.push(b);
+  selectedId=b.id;
+  render();
+}
+
+function exprText(e){
+  if(!e)return '0';
+  if(e.kind==='math')return '('+exprText(e.a)+' '+e.op+' '+exprText(e.b)+')';
+  return e.value===undefined||e.value===''?'0':String(e.value);
+}
+function exprClone(e){
+  if(!e)return {kind:'value',value:'0'};
+  if(e.kind==='math')return {kind:'math',a:exprClone(e.a),op:e.op||'+',b:exprClone(e.b)};
+  return {kind:'value',value:String(e.value??'0')};
+}
+function normalizeExpr(e){
+  if(!e)return {kind:'value',value:''};
+  if(e.kind==='math')return {kind:'math',a:normalizeExpr(e.a),op:e.op||'+',b:normalizeExpr(e.b)};
+  if(e.kind==='variable')return {kind:'variable',value:String(e.value??'')};
+  return {kind:'value',value:(String(e.value??'').trim()===''?'0':String(e.value))};
+}
+function exprIsMath(e){return !!e&&e.kind==='math';}
+function exprVariables(e){
+  const out=[]; if(!e)return out;
+  if(e.kind==='math'){return [...exprVariables(e.a),...exprVariables(e.b)];}
+  const names=getDeclaredVariableNames(); if(names.includes(e.value))out.push(e.value); return out;
+}
+
+function blockLabel(b){
+  if(b.type==='max') return ['💡 Matrice lumineuse','MAX7219'];
+  if(b.type==='delay') return ['⏱ Délai',exprText(b.delayExpr||{kind:'value',value:b.ms??500})+' ms'];
+  if(b.type==='repeat') return ['🔁 Répéter '+exprText(b.timesExpr||{kind:'value',value:b.times??5})+' fois','Glissez les actions dans la zone'];
+  if(b.type==='if') return ['❓ SI… ALORS',(b.variable||'maVariable')+' '+(b.op||'>')+' '+exprText(b.valueExpr||{kind:'value',value:b.value??'0'})];
+  if(b.type==='pinDesc') return ['📌 Description des tiges','D'+b.pin+' • '+(b.mode==='output'?'Sortie':'Entrée')+' • '+(b.description||'')];
+  if(b.type==='read') return ['📥 '+(b.variable||'maVariable')+' = D'+b.pin,getPinDescription(b.pin)];
+  if(b.type==='write') return ['🔌 Commander une sortie D'+b.pin+' = '+b.value,getPinDescription(b.pin)];
+  if(b.type==='var') return ['📦 Variable '+b.name,'= '+b.value];
+  if(b.type==='assign') return ['🟧 Attribuer une valeur',b.variable+' = '+exprText(b.expr)];
+  if(b.type==='math') return ['➗ Opération mathématique',exprText(b.a)+' '+b.op+' '+exprText(b.b)];
+  if(b.type==='call') return ['▶ Appeler '+b.name+'()',''];
+  return ['⬛ Effacer les matrices',''];
+}
+
+function removeBlockFrom(body,id){
+  for(let i=body.length-1;i>=0;i--){
+    const b=body[i];
+    if(b.id===id){body.splice(i,1);return true;}
+    if((b.type==='repeat'||b.type==='if') && removeBlockFrom(b.body,id)) return true;
+    if(b.type==='if' && removeBlockFrom(b.elseBody,id)) return true;
+  }
+  return false;
+}
+function findBodyOf(id,body=blocks){
+  for(const b of body){
+    if(b.id===id) return body;
+    if((b.type==='repeat'||b.type==='if') && findBodyOf(id,b.body)) return b.body;
+    if(b.type==='if' && findBodyOf(id,b.elseBody)) return b.elseBody;
+  }
+  return null;
+}
+
+function bodyContains(body,id){
+  if(!body)return false;
+  for(const b of body){
+    if(b.id===id)return true;
+    if(b.body && bodyContains(b.body,id))return true;
+    if(b.elseBody && bodyContains(b.elseBody,id))return true;
+  }
+  return false;
+}
+function locateInBody(id,body,parent=null){
+  for(let i=0;i<body.length;i++){
+    if(body[i].id===id)return {body,index:i,block:body[i],parent};
+    if(body[i].body){
+      const r=locateInBody(id,body[i].body,body[i]);
+      if(r)return r;
+    }
+    if(body[i].type==='if' && body[i].elseBody){
+      const r=locateInBody(id,body[i].elseBody,body[i]);
+      if(r)return r;
+    }
+  }
+  return null;
+}
+function locateBlock(id){
+  const setup=locateInBody(id,setupBlocks,null);
+  if(setup)return setup;
+  const main=locateInBody(id,blocks,null);
+  if(main)return main;
+  for(const f of functions){
+    const r=locateInBody(id,f.body,{function:f});
+    if(r)return r;
+  }
+  return null;
+}
+function getTargetBody(owner){
+  if(owner==='setup')return setupBlocks;
+  if(owner==='root')return blocks;
+  if(owner && owner.startsWith('function_')){
+    const f=functions.find(x=>String(x.id)===owner.substring(9));
+    return f?f.body:null;
+  }
+  if(owner && String(owner).endsWith('_else')){
+    const id=parseInt(String(owner).slice(0,-5));
+    const found=locateBlock(id);
+    return found && found.block && found.block.type==='if' ? found.block.elseBody : null;
+  }
+  const found=locateBlock(parseInt(owner));
+  return found && found.block ? found.block.body : null;
+}
+
+function blockLabel(b){
+  if(b.type==='max') return ['💡 Matrice lumineuse','MAX7219'];
+  if(b.type==='delay') return ['⏱ Délai',exprText(b.delayExpr||{kind:'value',value:b.ms??500})+' ms'];
+  if(b.type==='repeat') return ['🔁 Répéter '+exprText(b.timesExpr||{kind:'value',value:b.times??5})+' fois','Glissez les actions dans la zone'];
+  if(b.type==='if') return ['❓ SI… ALORS',(b.variable||'maVariable')+' '+(b.op||'>')+' '+exprText(b.valueExpr||{kind:'value',value:b.value??'0'})];
+  if(b.type==='pinDesc') return ['📌 Description des tiges','D'+b.pin+' • '+(b.mode==='output'?'Sortie':'Entrée')+' • '+(b.description||'')];
+  if(b.type==='read') return ['📥 '+(b.variable||'maVariable')+' = D'+b.pin,getPinDescription(b.pin)];
+  if(b.type==='write') return ['🔌 Commander une sortie D'+b.pin+' = '+b.value,getPinDescription(b.pin)];
+  if(b.type==='var') return ['📦 Variable '+b.name,'= '+b.value];
+  if(b.type==='assign') return ['🟧 Attribuer une valeur',b.variable+' = '+exprText(b.expr)];
+  if(b.type==='math') return ['➗ Opération mathématique',exprText(b.a)+' '+b.op+' '+exprText(b.b)];
+  if(b.type==='call') return ['▶ Appeler '+b.name+'()',''];
+  return ['⬛ Effacer les matrices',''];
+}
+
+function cloneBlock(original){
+  // Copie profonde d'un bloc, en conservant notamment les motifs MAX7219.
+  const copy={};
+  Object.keys(original).forEach(key=>{
+    if(key==='id') return;
+    if(key==='frame'){
+      copy.frame=original.frame.map(matrix=>matrix.map(row=>row.slice()));
+    }else if(key==='body'){
+      copy.body=original.body.map(child=>cloneBlock(child));
+    }else if(key==='elseBody'){
+      copy.elseBody=original.elseBody.map(child=>cloneBlock(child));
+    }else{
+      copy[key]=original[key];
+    }
+  });
+  copy.id=nextId++;
+  return copy;
+}
+
+function duplicateBlock(id){
+  const source=locateBlock(id);
+  if(!source)return;
+  const copy=cloneBlock(source.block);
+  // La copie est placée immédiatement après le bloc original,
+  // dans le même conteneur (programme, SI, RÉPÉTER ou fonction).
+  source.body.splice(source.index+1,0,copy);
+  selectedId=copy.id;
+  render();
+}
+
+function removeById(id){
+  const r=locateBlock(id);
+  if(r){r.body.splice(r.index,1);return r.block;}
+  return null;
+}
+
+function insertAt(body,index,item){
+  body.splice(Math.max(0,Math.min(index,body.length)),0,item);
+}
+
+function canMove(item,targetBody){
+  if(!item)return false;
+  if(item.body && bodyContains(item.body,targetBody._ownerId)) return false;
+  return true;
+}
+
+function addDropZone(parentEl,body,index,label=''){
+  const z=document.createElement('div');
+  z.className='insertZone';
+  z.dataset.index=index;
+  z.dataset.owner=body._ownerId||'root';
+  z.dataset.end=(index===body.length?'1':'0');
+  if(index===body.length){
+    z.classList.add('endZone');
+    z.title='Déposer ici pour placer le bloc à la fin';
+  }
+  if(label) z.title=label;
+  parentEl.appendChild(z);
+}
+
+function addMaxMiniPreview(el,b){
+  const preview=document.createElement('div');
+  preview.className='maxMiniPreview';
+  for(let m=0;m<4;m++){
+    const mat=document.createElement('div');
+    mat.className='maxMiniMatrix';
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const cell=document.createElement('span');
+      cell.className='maxMiniCell'+(b.frame[m][r][c]?' on':'');
+      mat.appendChild(cell);
+    }
+    preview.appendChild(mat);
+  }
+  el.appendChild(preview);
+}
+
+function getDigitalPinError(b){
+  if(!b || !['read','write','pinDesc'].includes(b.type)) return '';
+  if(b.pin==='' || b.pin===null || b.pin===undefined) return '';
+  const pin=Number(b.pin);
+  if(!Number.isFinite(pin)) return 'Aucune tige n\'est sélectionnée.';
+  const defs=getPinDefinitions();
+  const def=defs.get(pin);
+  if(matrixIsUsed() && pinIsMatrixReserved(pin)) return 'D'+pin+' n\'est plus disponible.';
+  if(!def) return 'D'+pin+' n\'est pas définie dans Description des tiges.';
+  if(b.type==='read' && def.mode!=='input') return 'D'+pin+' n\'est pas une entrée.';
+  if(b.type==='write' && def.mode!=='output') return 'D'+pin+' n\'est pas une sortie.';
+  return '';
+}
+
+function createProgramElement(b,body,index){
+  const el=document.createElement('div');
+  const ioError=getDigitalPinError(b);
+  el.className='programBlock '+b.type+(b.id===selectedId?' selected':'')+(ioError?' ioInvalid':'');
+  el.draggable=false;
+  el.dataset.blockId=b.id;
+
+  const handle=document.createElement('span');
+  handle.className='dragHandle';
+  handle.textContent='⋮⋮';
+  handle.title='Glisser pour déplacer';
+  handle.draggable=true;
+  handle.addEventListener('mousedown',e=>e.stopPropagation());
+  handle.addEventListener('dragstart',e=>{
+    e.stopPropagation();
+    draggedBlockId=b.id;
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('moveBlockId',String(b.id));
+    e.dataTransfer.setData('text/plain','move');
+    el.classList.add('dragging');
+  });
+  handle.addEventListener('dragend',()=>{el.classList.remove('dragging');setTimeout(()=>{draggedBlockId=null},150)});
+  el.appendChild(handle);
+  if(ioError){
+    const badge=document.createElement('div'); badge.className='ioErrorBadge'; badge.textContent='⚠'; badge.title=ioError;
+    const msg=document.createElement('div'); msg.className='ioErrorMessage'; msg.textContent='⚠ '+ioError;
+    el.appendChild(badge); el.appendChild(msg);
+  }
+
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('delete')||e.target.classList.contains('duplicate'))return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId=b.id;
+    render();
+  });
+
+  const [title,desc]=blockLabel(b);
+  const header=document.createElement('div');
+  header.className='blockHeader';
+  const titleEl=document.createElement('div');
+  titleEl.className='name';
+
+  if(b.type==='math'){
+    const icon=document.createElement('span'); icon.className='mathIcon'; icon.textContent='➗';
+    const txt=document.createElement('span'); txt.className='mathText'; txt.textContent='Opération mathématique';
+    titleEl.appendChild(icon); titleEl.appendChild(txt);
+  }else if(b.type==='pinDesc'){
+    titleEl.classList.add('pinDescTitle');
+    titleEl.textContent='📌 Description des tiges';
+  }else if(b.type==='read'){
+    titleEl.textContent='🔎 Lire une entrée';
+  }else if(b.type==='write'){
+    titleEl.textContent='🔌 Commander une sortie';
+  }else if(b.type==='var'){
+    titleEl.textContent='📦 Créer une variable';
+  }else if(b.type==='assign'){
+    titleEl.textContent='🟧 Attribuer une valeur';
+  }else if(b.type==='delay'){
+    titleEl.textContent='⏱ Délai';
+  }else if(b.type==='repeat'){
+    titleEl.textContent='🔁 Répéter';
+  }else if(b.type==='if'){
+    titleEl.textContent='❓ SI… ALORS';
+  }else if(b.type==='call'){
+    titleEl.textContent='▶ Appeler une fonction';
+  }else if(b.type==='clear'){
+    titleEl.textContent='⬛ Effacer les matrices';
+  }else if(b.type==='max'){
+    titleEl.textContent='💡 Matrice lumineuse';
+  }else{
+    titleEl.textContent=title;
+  }
+  header.appendChild(titleEl);
+  el.appendChild(header);
+
+  if(b.type==='read'){
+    const row=document.createElement('div');
+    row.className='readSecondRow';
+    const eq=document.createElement('div');
+    eq.className='readEquation';
+    eq.textContent=(b.variable||'maVariable')+' = '+(b.pin===''||b.pin==null?'—':'D'+b.pin);
+    row.appendChild(eq);
+    const pinDesc=getPinDescription(b.pin);
+    if(pinDesc){ const d=document.createElement('div'); d.className='readDesc'; d.textContent=pinDesc; row.appendChild(d); }
+    el.appendChild(row);
+  }else{
+    const row=document.createElement('div');
+    row.className='blockSecondRow';
+    const text=document.createElement('div');
+    text.className='secondText';
+    let second='';
+    if(b.type==='max'){ const lum=Number.isFinite(Number(b.brightness))?Number(b.brightness):8; const fadeText=b.fadeEffect==='in'?' • apparition progressive':''; second=(b.scrollEnabled ? 'MAX7219 — 4 matrices • défilement '+({right:'→',left:'←',up:'↑',down:'↓'}[b.scrollDirection]||'→')+' • luminosité '+lum : 'MAX7219 — 4 matrices • luminosité '+lum)+fadeText; }
+    else if(b.type==='delay') second=exprText(b.delayExpr||{kind:'value',value:b.ms??500})+' ms';
+    else if(b.type==='repeat') second=exprText(b.timesExpr||{kind:'value',value:b.times??5})+' fois';
+    else if(b.type==='if') second='Si '+(b.variable||'maVariable')+' '+(b.op||'>')+' '+exprText(b.valueExpr||{kind:'value',value:b.value??'0'});
+    else if(b.type==='pinDesc') second='D'+b.pin+' • '+(b.mode==='output'?'Sortie':'Entrée')+' • '+(b.description||'');
+    else if(b.type==='write') second='D'+b.pin+' = '+b.value;
+    else if(b.type==='var') second=b.name+' = '+b.value;
+    else if(b.type==='assign') second=b.variable+' = '+exprText(b.expr);
+    else if(b.type==='math') second=exprText(b.a)+' '+b.op+' '+exprText(b.b);
+    else if(b.type==='call') second=b.name+'()';
+    else if(b.type==='clear') second=b.fadeOut?'4 matrices • disparition progressive':'4 matrices';
+    else second=desc||'';
+    text.textContent=second;
+    row.appendChild(text);
+    if((b.type==='write') && getPinDescription(b.pin)){
+      const d=document.createElement('div'); d.className='secondDesc'; d.textContent=getPinDescription(b.pin); row.appendChild(d);
+    }
+    if(b.type==='call'){
+      const f=functions.find(fn=>fn.name===b.name);
+      if(f && f.description){
+        const d=document.createElement('div'); d.className='secondDesc'; d.textContent=f.description; row.appendChild(d);
+      }
+    }
+    el.appendChild(row);
+  }
+
+  if(b.type==='max') addMaxMiniPreview(el,b);
+
+  function appendNestedSection(label, arr, className){
+    const wrap=document.createElement('div');
+    wrap.className='nestedSection '+className;
+    if(label){ const lab=document.createElement('div'); lab.className='nestedLabel'; lab.textContent=label; wrap.appendChild(lab); }
+    const slot=document.createElement('div');
+    slot.className='blockSlot nestedSlot'+(arr.length?'':' emptySlot');
+    arr._ownerId=b.id+(className==='elseNested'?'_else':'');
+    slot.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();slot.classList.add('active')});
+    slot.addEventListener('dragleave',()=>slot.classList.remove('active'));
+    slot.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();slot.classList.remove('active');
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette){ if(palette==='func')return; const item=makeBlock(palette);arr.push(item);selectedId=item.id;render();return; }
+      const moveId=parseInt(e.dataTransfer.getData('moveBlockId'))||draggedBlockId||0;
+      if(!moveId)return;
+      const source=locateBlock(moveId); if(!source || source.block===b || bodyContains(source.block.body||[],b.id))return;
+      const item=source.block; source.body.splice(source.index,1); arr.push(item); selectedId=item.id; render();
+    });
+    arr.forEach((child,i)=>{ addDropZone(slot,arr,i); slot.appendChild(createProgramElement(child,arr,i)); });
+    addDropZone(slot,arr,arr.length); wrap.appendChild(slot); el.appendChild(wrap);
+  }
+  if(b.type==='if'){
+    appendNestedSection('Alors', b.body, 'thenNested');
+    if(b.elseEnabled) appendNestedSection('Sinon', b.elseBody, 'elseNested');
+  }else if(b.body){
+    appendNestedSection('', b.body, 'bodyNested');
+  }
+
+  const duplicate=document.createElement('button');
+  duplicate.className='duplicate';
+  duplicate.textContent='⧉';
+  duplicate.title='Copier ce bloc';
+  duplicate.onclick=e=>{e.stopPropagation();duplicateBlock(b.id);};
+  el.appendChild(duplicate);
+
+  const del=document.createElement('button');
+  del.className='delete';
+  del.textContent='×';
+  del.onclick=e=>{e.stopPropagation();removeById(b.id);if(selectedId===b.id)selectedId=null;render();};
+  el.appendChild(del);
+  return el;
+}
+
+function renderBody(body,container){
+  // Give each body an owner marker without changing the array API.
+  if(!body._ownerId)body._ownerId='root';
+  addDropZone(container,body,0);
+  body.forEach((b,i)=>{
+    container.appendChild(createProgramElement(b,body,i));
+    addDropZone(container,body,i+1);
+  });
+}
+
+function render(){
+  const setup=document.getElementById('setupBody');
+  setup.innerHTML='';
+  setup.classList.toggle('emptySetup',setupBlocks.length===0);
+  setupBlocks._ownerId='setup';
+  renderBody(setupBlocks,setup);
+
+  const dz=document.getElementById('dropzone');
+  dz.innerHTML='';
+  dz.classList.toggle('empty',blocks.length===0);
+  blocks._ownerId='root';
+  renderBody(blocks,dz);
+
+  document.getElementById('count').textContent=blocks.length+' bloc(s) dans le programme principal';
+
+  let shelf=document.getElementById('functionShelf');
+  if(!shelf){
+    shelf=document.createElement('div');shelf.id='functionShelf';shelf.className='functionShelf';
+    dz.parentNode.insertBefore(shelf,dz.nextSibling);
+
+    // La section Fonctions accepte directement le bloc
+    // « Définir une fonction » provenant de la palette.
+    shelf.addEventListener('dragover',e=>{
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette==='func'){
+        e.preventDefault();
+        e.stopPropagation();
+        shelf.classList.add('dropTargetActive');
+        e.dataTransfer.dropEffect='copy';
+      }
+    });
+    shelf.addEventListener('dragleave',e=>{
+      if(!shelf.contains(e.relatedTarget)) shelf.classList.remove('dropTargetActive');
+    });
+    shelf.addEventListener('drop',e=>{
+      const palette=e.dataTransfer.getData('paletteType');
+      if(palette!=='func')return;
+      e.preventDefault();
+      e.stopPropagation();
+      shelf.classList.remove('dropTargetActive');
+      addBlock('func');
+    });
+  }
+  shelf.innerHTML='<h3>🔧 Fonctions</h3>';
+  if(!functions.length){
+    shelf.innerHTML+='<div class="status">Aucune fonction. Glissez « Définir une fonction » ici pour en créer une.</div>';
+  }else{
+    functions.forEach(f=>{
+      const card=document.createElement('div');
+      card.className='functionCard'+(f.collapsed?' collapsed':'');
+
+      const header=document.createElement('div');header.className='functionHeader';
+      const title=document.createElement('span');title.className='functionTitle';
+      title.textContent='🔧 Fonction : '+f.name;
+      header.appendChild(title);
+
+      const toggle=document.createElement('button');
+      toggle.className='functionToggle';
+      toggle.type='button';
+      toggle.title=f.collapsed?'Afficher les blocs de la fonction':'Réduire la fonction';
+      toggle.textContent=f.collapsed?'▸':'▾';
+      toggle.onclick=e=>{
+        e.stopPropagation();
+        f.collapsed=!f.collapsed;
+        render();
+      };
+      header.appendChild(toggle);
+      header.onclick=()=>{selectedId=f.id;renderEditor()};
+      card.appendChild(header);
+      if(f.description){
+        const fd=document.createElement('div');
+        fd.className='functionDescription';
+        fd.textContent=f.description;
+        card.appendChild(fd);
+      }
+
+      if(!f.collapsed){
+        f.body._ownerId='function_'+f.id;
+        const slot=document.createElement('div');
+        slot.className='blockSlot functionSlot';
+        // Les fonctions utilisent exactement le même système de zones
+        // d'insertion et de déplacement que le programme principal.
+        renderBody(f.body,slot);
+        card.appendChild(slot);
+      }
+
+      const remove=document.createElement('button');remove.textContent='Supprimer la fonction';remove.style.marginTop='7px';
+      remove.onclick=()=>{functions=functions.filter(x=>x.id!==f.id);if(selectedId===f.id)selectedId=null;render()};
+      card.appendChild(remove);
+      shelf.appendChild(card);
+    });
+  }
+
+  renderEditor();
+  updateCode();
+  scheduleAutoSave();
+}
+
+function getSelectedBlock(){
+  if(selectedId==null)return null;
+  const found=locateBlock(selectedId);
+  if(found)return found.block;
+  const f=functions.find(x=>x.id===selectedId);
+  return f?{type:'func',name:f.name,id:f.id}:null;
+}
+
+function getDeclaredVariableNames(){
+  const names=[];
+  function collect(body){
+    (body||[]).forEach(b=>{
+      if(b.type==='var' && b.name && !names.includes(b.name)) names.push(b.name);
+      if(b.type==='repeat'||b.type==='if') collect(b.body);
+      if(b.type==='if') collect(b.elseBody);
+    });
+  }
+  collect(setupBlocks);
+  collect(blocks);
+  functions.forEach(f=>collect(f.body));
+  return names;
+}
+
+function populateMathVariables(b){
+  const names=getDeclaredVariableNames();
+  const left=document.getElementById('mathVariable');
+  const right=document.getElementById('mathA');
+  const noVars=document.getElementById('mathNoVariables');
+  const apply=document.getElementById('mathApply');
+  [left,right].forEach(sel=>{
+    sel.innerHTML='';
+    names.forEach(name=>{
+      const opt=document.createElement('option');
+      opt.value=name; opt.textContent=name; sel.appendChild(opt);
+    });
+  });
+  if(!names.length){
+    noVars.style.display='block';
+    left.disabled=true; right.disabled=true; apply.disabled=true;
+    return;
+  }
+  noVars.style.display='none';
+  left.disabled=false; right.disabled=false; apply.disabled=false;
+  left.value=names.includes(b.variable)?b.variable:names[0];
+  right.value=names.includes(b.a)?b.a:names[0];
+  b.variable=left.value;
+  b.a=right.value;
+}
+
+function populateReadVariables(b){
+  const names=getDeclaredVariableNames();
+  const sel=document.getElementById('readVariable');
+  const noVars=document.getElementById('readNoVariables');
+  const apply=document.querySelector('#readEditor button[onclick="applyRead()"]');
+  sel.innerHTML='';
+  names.forEach(name=>{
+    const opt=document.createElement('option');
+    opt.value=name; opt.textContent=name; sel.appendChild(opt);
+  });
+  if(!names.length){
+    const opt=document.createElement('option');
+    opt.value=''; opt.textContent='Créer une variable.'; sel.appendChild(opt);
+    sel.disabled=true; noVars.style.display='block';
+    if(apply) apply.disabled=true;
+    return;
+  }
+  sel.disabled=false; noVars.style.display='none';
+  if(!names.includes(b.variable)) b.variable=names[0];
+  sel.value=b.variable;
+  if(apply) apply.disabled=false;
+}
+
+function renderEditor(){
+  let b=getSelectedBlock();
+  document.getElementById('noSelection').style.display=b?'none':'block';
+  document.getElementById('selectedInfo').style.display=b?'block':'none';
+  if(!b)return;
+  const editorTitles={max:'💡 Matrice lumineuse — MAX7219',delay:'⏱ Délai',repeat:'🔁 Répéter',if:'❓ SI… ALORS',pinDesc:'📌 Description des tiges',read:'🔎 Lire une entrée',write:'🔌 Commander une sortie',var:'📦 Créer une variable',assign:'🟧 Attribuer une valeur',math:'➗ Opération mathématique',func:'🔧 Définir une fonction',call:'▶ Appeler une fonction',clear:'⬛ Effacer les matrices'};
+  document.getElementById('selectedTitle').textContent=editorTitles[b.type]||'Éditeur du bloc';
+  document.getElementById('maxEditor').style.display=b.type==='max'?'block':'none';
+  document.getElementById('clearEditor').style.display=b.type==='clear'?'block':'none';
+  document.getElementById('delayEditor').style.display=b.type==='delay'?'block':'none';
+  document.getElementById('repeatEditor').style.display=b.type==='repeat'?'block':'none';
+  document.getElementById('ifEditor').style.display=b.type==='if'?'block':'none';
+  document.getElementById('pinDescEditor').style.display=b.type==='pinDesc'?'block':'none';
+  document.getElementById('readEditor').style.display=b.type==='read'?'block':'none';
+  document.getElementById('writeEditor').style.display=b.type==='write'?'block':'none';
+  document.getElementById('varEditor').style.display=b.type==='var'?'block':'none';
+  document.getElementById('assignEditor').style.display=b.type==='assign'?'block':'none';
+  document.getElementById('mathEditor').style.display='none';
+  document.getElementById('funcEditor').style.display=b.type==='func'?'block':'none';
+  document.getElementById('callEditor').style.display=b.type==='call'?'block':'none';
+  document.getElementById('repeatEditor').style.display=b.type==='repeat'?'block':'none';
+  document.getElementById('ifEditor').style.display=b.type==='if'?'block':'none';
+  document.getElementById('readEditor').style.display=b.type==='read'?'block':'none';
+  document.getElementById('writeEditor').style.display=b.type==='write'?'block':'none';
+  document.getElementById('varEditor').style.display=b.type==='var'?'block':'none';
+  document.getElementById('assignEditor').style.display=b.type==='assign'?'block':'none';
+  document.getElementById('mathEditor').style.display='none';
+  document.getElementById('funcEditor').style.display=b.type==='func'?'block':'none';
+  document.getElementById('callEditor').style.display=b.type==='call'?'block':'none';
+  if(b.type==='max'){
+    const holder=document.getElementById('matrices');holder.innerHTML='';
+    for(let m=0;m<4;m++){
+      const wrap=document.createElement('div');wrap.className='matrixWrap';
+      wrap.innerHTML='<h3>Matrice '+(m+1)+'</h3>';
+      const mat=document.createElement('div');mat.className='matrix';
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+        const cell=document.createElement('div');cell.className='cell'+(b.frame[m][r][c]?' on':'');
+        cell.onclick=()=>{b.frame[m][r][c]=!b.frame[m][r][c];render()};
+        mat.appendChild(cell);
+      }
+      wrap.appendChild(mat);holder.appendChild(wrap);
+    }
+    const brightnessRange=document.getElementById('maxBrightnessRange');
+    const brightnessValue=document.getElementById('maxBrightnessValue');
+    const brightness=Number.isFinite(Number(b.brightness))?Math.max(0,Math.min(15,Number(b.brightness))):8;
+    brightnessRange.value=brightness;
+    brightnessValue.value=brightness;
+    const syncBrightness=(value)=>{
+      const v=Math.max(0,Math.min(15,parseInt(value)||0));
+      b.brightness=v;
+      brightnessRange.value=v;
+      brightnessValue.value=v;
+      updateCode();
+      scheduleAutoSave();
+      render();
+    };
+    brightnessRange.oninput=()=>syncBrightness(brightnessRange.value);
+    brightnessValue.oninput=()=>syncBrightness(brightnessValue.value);
+
+    const fadeIn=document.getElementById('maxFadeIn');
+    const fadeSpeed=document.getElementById('maxFadeSpeed');
+    const oldFade=b.fadeEffect||'none';
+    fadeIn.checked=oldFade==='in'||oldFade==='both';
+    fadeSpeed.value=Number.isFinite(Number(b.fadeSpeed))?Math.max(0,Number(b.fadeSpeed)):50;
+    const syncFade=()=>{
+      b.fadeEffect=fadeIn.checked?'in':'none';
+      b.fadeSpeed=Math.max(0,parseInt(fadeSpeed.value)||0);
+      render();
+      scheduleAutoSave();
+      updateCode();
+    };
+    fadeIn.onchange=syncFade;
+    fadeSpeed.onchange=syncFade;
+
+  } else if(b.type==='clear'){
+    const clearFade=document.getElementById('clearFadeOut');
+    const clearSpeed=document.getElementById('clearFadeSpeed');
+    clearFade.checked=!!b.fadeOut;
+    clearSpeed.value=Number.isFinite(Number(b.fadeSpeed))?Math.max(0,Number(b.fadeSpeed)):500;
+    const syncClearFade=()=>{
+      b.fadeOut=!!clearFade.checked;
+      b.fadeSpeed=Math.max(0,parseInt(clearSpeed.value)||0);
+      render();
+      scheduleAutoSave();
+      updateCode();
+    };
+    clearFade.onchange=syncClearFade;
+    clearSpeed.onchange=syncClearFade;
+
+    const enabled=document.getElementById('maxScrollEnabled');
+    const opts=document.getElementById('scrollOptions');
+    enabled.checked=!!b.scrollEnabled;
+    opts.classList.toggle('active',!!b.scrollEnabled);
+    const direction=document.getElementById('maxScrollDirection');
+    const step=document.getElementById('maxScrollStep');
+    const speed=document.getElementById('maxScrollSpeed');
+    const count=document.getElementById('maxScrollCount');
+    const loop=document.getElementById('maxScrollLoop');
+    direction.value=b.scrollDirection||'right';
+    step.value=b.scrollStep||1;
+    speed.value=b.scrollSpeed??100;
+    count.value=b.scrollCount||32;
+    loop.checked=!!b.scrollLoop;
+    const syncScroll=()=>{
+      b.scrollEnabled=enabled.checked;
+      b.scrollDirection=direction.value;
+      b.scrollStep=Math.max(1,Math.min(8,parseInt(step.value)||1));
+      b.scrollSpeed=Math.max(0,parseInt(speed.value)||0);
+      b.scrollCount=Math.max(1,Math.min(64,parseInt(count.value)||1));
+      b.scrollLoop=loop.checked;
+      opts.classList.toggle('active',b.scrollEnabled);
+      render();
+    };
+    enabled.onchange=syncScroll;
+    direction.onchange=syncScroll;
+    step.onchange=syncScroll;
+    speed.onchange=syncScroll;
+    count.onchange=syncScroll;
+    loop.onchange=syncScroll;
+  } else if(b.type==='delay'){
+    renderDelayEditor(b);
+  } else if(b.type==='repeat'){
+    renderRepeatEditor(b);
+  } else if(b.type==='if'){
+    populateIfVariables(b);
+    document.getElementById('ifOp').value=['==','!=','<','>','<=','>='].includes(b.op)?b.op:'>';
+    b.valueExpr=normalizeIfExpr(b.valueExpr||{kind:'value',value:b.value??'0'});
+    renderIfEditor(b);
+    const elseCheck=document.getElementById('ifElseEnabled');
+    elseCheck.checked=!!b.elseEnabled;
+    elseCheck.onchange=()=>{
+      b.elseEnabled=elseCheck.checked;
+      // Les blocs de Sinon peuvent être conservés pour une réactivation,
+      // mais une section Sinon désactivée est complètement ignorée par le programme
+      // et par le code Arduino généré.
+      if(!b.elseEnabled && selectedId!=null && bodyContains(b.elseBody||[], selectedId)){
+        selectedId=null;
+      }
+      render();
+    };
+  } else if(b.type==='pinDesc'){
+    populatePinDescriptionEditor(b);
+  } else if(b.type==='read'){
+    populateReadVariables(b);
+    updateDigitalPinOptions('read',b.pin);
+    const readPin=document.getElementById('readPin');
+    readPin.value=(b.pin===''||b.pin==null)?'':String(b.pin);
+    const syncReadApply=()=>{
+      const opt=readPin.options[readPin.selectedIndex];
+      const valid=readPin.value!=='' && !!opt && !opt.disabled && !readPin.disabled;
+      document.getElementById('readApply').disabled=!valid;
+    };
+    readPin.onchange=syncReadApply;
+    syncReadApply();
+  } else if(b.type==='write'){
+    updateDigitalPinOptions('write',b.pin);
+    const writePin=document.getElementById('writePin');
+    writePin.value=(b.pin===''||b.pin==null)?'':String(b.pin);
+    document.getElementById('writeValue').value=b.value;
+    const syncWriteApply=()=>{
+      const opt=writePin.options[writePin.selectedIndex];
+      const valid=writePin.value!=='' && !!opt && !opt.disabled && !writePin.disabled;
+      document.getElementById('writeApply').disabled=!valid;
+    };
+    writePin.onchange=syncWriteApply;
+    syncWriteApply();
+  } else if(b.type==='var'){
+    document.getElementById('varName').value=b.name;
+    document.getElementById('varInitial').value=b.value;
+  } else if(b.type==='assign'){
+    populateAssignEditor(b);
+  } else if(b.type==='math'){
+    populateMathEditor(b);
+  } else if(b.type==='func'){
+    document.getElementById('funcName').value=b.name;
+    document.getElementById('funcDescription').value=b.description||'';
+  } else if(b.type==='call'){
+    populateCallFunctions(b);
+  }
+}
+function fillAll(v){
+  const b=getSelectedBlock();if(!b||b.type!=='max')return;
+  b.frame.forEach(m=>m.forEach(r=>r.fill(v)));render();
+}
+function invertAll(){
+  const b=getSelectedBlock();if(!b||b.type!=='max')return;
+  b.frame.forEach(m=>m.forEach(r=>r.forEach((v,c)=>r[c]=!v)));render();
+}
+function applyMaxScroll(){
+  const b=getSelectedBlock();if(!b||b.type!=='max')return;
+  b.scrollEnabled=document.getElementById('maxScrollEnabled').checked;
+  b.scrollDirection=document.getElementById('maxScrollDirection').value;
+  b.scrollStep=Math.max(1,Math.min(8,parseInt(document.getElementById('maxScrollStep').value)||1));
+  b.scrollSpeed=Math.max(0,parseInt(document.getElementById('maxScrollSpeed').value)||0);
+  b.scrollCount=Math.max(1,Math.min(64,parseInt(document.getElementById('maxScrollCount').value)||1));
+  b.scrollLoop=!!document.getElementById('maxScrollLoop').checked;
+  render();
+}
+function applyDelay(){
+  const b=getSelectedBlock();if(!b||b.type!=='delay')return;
+  b.delayExpr=normalizeDelayExpr(b.delayExpr||{kind:'value',value:b.ms??500});
+  const txt=exprText(b.delayExpr);
+  const n=parseFloat(txt.replace(',','.'));
+  if(b.delayExpr.kind==='value' && Number.isFinite(n)) b.ms=Math.max(0,n);
+  render();
+}
+function applyRepeat(){
+  const b=getSelectedBlock();if(!b||b.type!=='repeat')return;
+  b.timesExpr=normalizeRepeatExpr(b.timesExpr||{kind:'value',value:b.times??5});
+  const txt=exprText(b.timesExpr);
+  const n=parseInt(txt,10);
+  if(b.timesExpr.kind==='value' && Number.isFinite(n)) b.times=Math.max(1,n);
+  render();
+}
+/* V4-15 — éditeur du délai : nombre, variable et opération mathématique. */
+let delayDragState=null;
+let delaySelectedTool='';
+function normalizeDelayExpr(e){
+  if(!e)return {kind:'value',value:'500'};
+  if(e.kind==='math')return {kind:'math',a:normalizeDelayExpr(e.a),op:e.op||'+',b:normalizeDelayExpr(e.b)};
+  if(e.kind==='variable'){
+    const names=getDeclaredVariableNames();
+    return {kind:'variable',value:names.includes(String(e.value??''))?String(e.value):((names[0])||'')};
+  }
+  const v=String(e.value??'').trim();
+  return {kind:'value',value:v===''?'500':String(e.value)};
+}
+function clearDelayToolSelection(){
+  document.querySelectorAll('#delayTools .delayTool').forEach(x=>x.classList.remove('selected'));
+}
+function setDelayTool(tool){
+  delaySelectedTool=tool||'';clearDelayToolSelection();
+  if(delaySelectedTool){const el=document.querySelector('#delayTools .delayTool[data-delay-expr-tool="'+delaySelectedTool+'"]');if(el)el.classList.add('selected');}
+}
+function createDelayExpr(tool){
+  if(tool==='math')return {kind:'math',a:{kind:'value',value:'0'},op:'+',b:{kind:'value',value:'0'}};
+  if(tool==='variable'){const names=getDeclaredVariableNames();if(!names.length)return null;return {kind:'variable',value:names[0]};}
+  return null;
+}
+function getDelayDropTool(e){
+  const raw=e?.dataTransfer?.getData('text/plain')||'';
+  if(raw.indexOf('delay-tool:')===0)return raw.slice('delay-tool:'.length);
+  return delayDragState?.mode==='copy'?delayDragState.tool:delaySelectedTool;
+}
+function makeDelayNumberInput(expr,onChange){
+  const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.autocomplete='off';input.className='delayNumber';
+  input.value=(String(expr.value??'').trim()===''?'0':String(expr.value));
+  const resize=()=>{const n=Math.max(1,String(input.value||'').length);input.style.width=Math.max(30,Math.min(220,n*8+10))+'px';};
+  input.addEventListener('input',()=>{expr.value=input.value;resize();onChange(expr,true);updateCode();scheduleAutoSave();});
+  input.addEventListener('mousedown',e=>e.stopPropagation());resize();return input;
+}
+function makeDelayVariableSelect(expr,onChange){
+  const node=document.createElement('div');node.className='delayVariableNode';
+  const select=document.createElement('select');select.className='delayVariableSelect';select.setAttribute('aria-label','Variable pour le délai');
+  const names=getDeclaredVariableNames();names.forEach(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;select.appendChild(o);});
+  if(names.length){if(!names.includes(expr.value))expr.value=names[0];select.value=expr.value;}
+  select.addEventListener('change',()=>{expr.value=select.value;onChange(expr);});select.addEventListener('mousedown',e=>e.stopPropagation());
+  node.appendChild(select);makeDelayMovable(node,expr,onChange);return node;
+}
+function makeDelayMovable(node,expr,onChange){
+  node.draggable=true;node.addEventListener('dragstart',e=>{if(e.target.closest('select,input')){e.preventDefault();return;}e.stopPropagation();delayDragState={mode:'move',expr:JSON.parse(JSON.stringify(expr)),node,remove:()=>onChange({kind:'value',value:'500'}),removeSilent:()=>onChange({kind:'value',value:'500'},true),dropHandled:false};if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','delay-move');}node.classList.add('delayDragging');});
+  node.addEventListener('dragend',e=>{e.stopPropagation();node.classList.remove('delayDragging');const moving=delayDragState;if(moving?.mode==='move'&&moving.node===node&&!moving.dropHandled){moving.remove();moving.dropHandled=true;}if(delayDragState?.node===node)delayDragState=null;renderDelayEditorAfterChange();});
+}
+function makeDelayMathMovable(node,expr,onChange){makeDelayMovable(node,expr,onChange);}
+function installDelayToolHandlers(){
+  document.querySelectorAll('#delayTools .delayTool').forEach(tool=>{tool.draggable=true;tool.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setDelayTool(tool.dataset.delayExprTool||'');});tool.addEventListener('dragstart',e=>{e.stopPropagation();const type=tool.dataset.delayExprTool||'';delayDragState={mode:'copy',tool:type};setDelayTool(type);if(e.dataTransfer){e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','delay-tool:'+type);}});tool.addEventListener('dragend',e=>{e.stopPropagation();delayDragState=null;setDelayTool('');});});
+}
+function renderDelaySlot(slot,expr,onChange){
+  slot.innerHTML='';slot.classList.remove('active');
+  slot.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=delayDragState?.mode==='move'?'move':'copy';slot.classList.add('active');});
+  slot.addEventListener('dragleave',e=>{if(!slot.contains(e.relatedTarget))slot.classList.remove('active');});
+  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('active');if(delayDragState?.mode==='move'){const moving=delayDragState;if(moving.node&&moving.node.contains(slot))return;moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();onChange(placed);delayDragState=null;setDelayTool('');renderDelayEditorAfterChange();return;}const tool=getDelayDropTool(e),placed=createDelayExpr(tool);if(placed){onChange(placed);delayDragState=null;setDelayTool('');renderDelayEditorAfterChange();}});
+  if(expr?.kind==='math'){
+    const node=document.createElement('div');node.className='delayMathNode';
+    const left=document.createElement('div');left.className='delayDropSlot';
+    const op=document.createElement('select');op.className='delayOperator';op.setAttribute('aria-label','Opération mathématique');[['+','+'],['-','−'],['*','×'],['/','÷'],['%','%']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;op.appendChild(o);});
+    op.value=expr.op||'+';op.addEventListener('change',()=>{expr.op=op.value;onChange(expr);});op.addEventListener('mousedown',e=>e.stopPropagation());
+    const right=document.createElement('div');right.className='delayDropSlot';
+    renderDelaySlot(left,expr.a||{kind:'value',value:'0'},(v,silent)=>{expr.a=v;onChange(expr,silent);});renderDelaySlot(right,expr.b||{kind:'value',value:'0'},(v,silent)=>{expr.b=v;onChange(expr,silent);});node.append(left,op,right);makeDelayMathMovable(node,expr,onChange);slot.appendChild(node);return;
+  }
+  if(expr?.kind==='variable'){slot.appendChild(makeDelayVariableSelect(expr,onChange));return;}
+  slot.appendChild(makeDelayNumberInput(expr,onChange));
+}
+function renderDelayEditorAfterChange(){const b=getSelectedBlock();if(!b||b.type!=='delay')return;b.delayExpr=normalizeDelayExpr(b.delayExpr||{kind:'value',value:b.ms??500});b.ms=exprText(b.delayExpr);updateCode();scheduleAutoSave();renderDelayEditor(b);}
+function renderDelayEditor(b){
+  b.delayExpr=normalizeDelayExpr(b.delayExpr||{kind:'value',value:b.ms??500});
+  const tools=document.getElementById('delayTools');const names=getDeclaredVariableNames();
+  tools.querySelectorAll('.delayTool[data-delay-expr-tool="variable"]').forEach(x=>x.style.opacity=names.length?'1':'.5');
+  const root=document.getElementById('delayExprEditor');root.innerHTML='';root.className='delayExprFrame';
+  const drop=document.createElement('div');drop.className='delayRootDrop';
+  drop.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=delayDragState?.mode==='move'?'move':'copy';drop.classList.add('active');});
+  drop.addEventListener('dragleave',e=>{if(!drop.contains(e.relatedTarget))drop.classList.remove('active');});
+  drop.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();drop.classList.remove('active');if(delayDragState?.mode==='move'){const moving=delayDragState;if(moving.node&&drop.contains(moving.node))return;moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();b.delayExpr=placed;delayDragState=null;setDelayTool('');renderDelayEditorAfterChange();return;}const tool=getDelayDropTool(e),placed=createDelayExpr(tool);if(placed){b.delayExpr=placed;delayDragState=null;setDelayTool('');renderDelayEditorAfterChange();}});
+  drop.addEventListener('click',e=>{if(!delaySelectedTool||e.target.closest('input,select'))return;const placed=createDelayExpr(delaySelectedTool);if(placed){b.delayExpr=placed;setDelayTool('');renderDelayEditorAfterChange();}});
+  renderDelaySlot(drop,b.delayExpr,(v,silent)=>{b.delayExpr=v;if(!silent)renderDelayEditorAfterChange();});root.appendChild(drop);installDelayToolHandlers();
+}
+document.addEventListener('drop',e=>{if(!delayDragState||delayDragState.mode!=='move')return;if(e.target.closest&&e.target.closest('#delayEditor .delayRootDrop,#delayEditor .delayDropSlot'))return;e.preventDefault();e.stopPropagation();const moving=delayDragState;moving.dropHandled=true;delayDragState=null;setDelayTool('');if(moving.remove)moving.remove();renderDelayEditorAfterChange();},true);
+
+/* V4-11 — éditeur du nombre de répétitions : nombre, variable et opération mathématique. */
+let repeatDragState=null;
+let repeatSelectedTool='';
+function normalizeRepeatExpr(e){
+  if(!e)return {kind:'value',value:'5'};
+  if(e.kind==='math')return {kind:'math',a:normalizeRepeatExpr(e.a),op:e.op||'+',b:normalizeRepeatExpr(e.b)};
+  if(e.kind==='variable'){
+    const names=getDeclaredVariableNames();
+    return {kind:'variable',value:names.includes(String(e.value??''))?String(e.value):((names[0])||'')};
+  }
+  const v=String(e.value??'').trim();
+  return {kind:'value',value:v===''?'5':v};
+}
+function clearRepeatToolSelection(){
+  document.querySelectorAll('#repeatTools .repeatTool').forEach(x=>x.classList.remove('selected'));
+}
+function setRepeatTool(tool){
+  repeatSelectedTool=tool||'';
+  clearRepeatToolSelection();
+  if(repeatSelectedTool){
+    const el=document.querySelector('#repeatTools .repeatTool[data-repeat-expr-tool="'+repeatSelectedTool+'"]');
+    if(el)el.classList.add('selected');
+  }
+}
+function createRepeatExpr(tool){
+  if(tool==='math')return {kind:'math',a:{kind:'value',value:'0'},op:'+',b:{kind:'value',value:'0'}};
+  if(tool==='variable'){
+    const names=getDeclaredVariableNames();
+    if(!names.length)return null;
+    return {kind:'variable',value:names[0]};
+  }
+  return null;
+}
+function makeRepeatNumberInput(expr,onChange){
+  const input=document.createElement('input');
+  input.type='text';input.inputMode='decimal';input.autocomplete='off';
+  input.className='repeatNumber';input.value=(String(expr.value??'').trim()===''?'0':String(expr.value));
+  const resize=()=>{const n=Math.max(1,String(input.value||'').length);input.style.width=Math.max(30,Math.min(220,n*8+10))+'px';};
+  input.addEventListener('input',()=>{expr.value=input.value;resize();onChange(expr,true);updateCode();scheduleAutoSave();});
+  input.addEventListener('mousedown',e=>e.stopPropagation());
+  resize();return input;
+}
+function makeRepeatVariableSelect(expr,onChange){
+  const node=document.createElement('div');node.className='repeatVariableNode';
+  const select=document.createElement('select');select.className='repeatVariableSelect';select.setAttribute('aria-label','Variable pour le nombre de répétitions');
+  const names=getDeclaredVariableNames();
+  names.forEach(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;select.appendChild(o);});
+  if(names.length){if(!names.includes(expr.value))expr.value=names[0];select.value=expr.value;}
+  select.addEventListener('change',()=>{expr.value=select.value;onChange(expr);});
+  select.addEventListener('mousedown',e=>e.stopPropagation());
+  node.appendChild(select);makeRepeatMovable(node,expr,onChange);return node;
+}
+function makeRepeatMovable(node,expr,onChange){
+  node.draggable=true;
+  node.addEventListener('dragstart',e=>{
+    if(e.target.closest('select,input')){e.preventDefault();return;}
+    e.stopPropagation();
+    repeatDragState={mode:'move',expr:JSON.parse(JSON.stringify(expr)),node,remove:()=>onChange({kind:'value',value:'5'}),removeSilent:()=>onChange({kind:'value',value:'5'},true),dropHandled:false};
+    if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','repeat-move');}
+    node.classList.add('repeatDragging');
+  });
+  node.addEventListener('dragend',e=>{
+    e.stopPropagation();node.classList.remove('repeatDragging');
+    const moving=repeatDragState;
+    if(moving?.mode==='move'&&moving.node===node&&!moving.dropHandled){moving.remove();moving.dropHandled=true;}
+    if(repeatDragState?.node===node)repeatDragState=null;
+    renderRepeatEditorAfterChange();
+  });
+}
+function makeRepeatMathMovable(node,expr,onChange){
+  node.draggable=true;
+  node.addEventListener('dragstart',e=>{
+    if(e.target.closest('select,input')){e.preventDefault();return;}
+    e.stopPropagation();
+    repeatDragState={mode:'move',expr:JSON.parse(JSON.stringify(expr)),node,remove:()=>onChange({kind:'value',value:'5'}),removeSilent:()=>onChange({kind:'value',value:'5'},true),dropHandled:false};
+    if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','repeat-move');}
+    node.classList.add('repeatDragging');
+  });
+  node.addEventListener('dragend',e=>{
+    e.stopPropagation();node.classList.remove('repeatDragging');
+    const moving=repeatDragState;
+    if(moving?.mode==='move'&&moving.node===node&&!moving.dropHandled){moving.remove();moving.dropHandled=true;}
+    if(repeatDragState?.node===node)repeatDragState=null;
+    renderRepeatEditorAfterChange();
+  });
+}
+function installRepeatToolHandlers(){
+  document.querySelectorAll('#repeatTools .repeatTool').forEach(tool=>{
+    tool.draggable=true;
+    tool.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setRepeatTool(tool.dataset.repeatExprTool||'');});
+    tool.addEventListener('dragstart',e=>{
+      e.stopPropagation();const type=tool.dataset.repeatExprTool||'';repeatDragState={mode:'copy',tool:type};setRepeatTool(type);
+      if(e.dataTransfer){e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','repeat-tool:'+type);}
+    });
+    tool.addEventListener('dragend',e=>{e.stopPropagation();repeatDragState=null;setRepeatTool('');});
+  });
+}
+function getRepeatDropTool(e){
+  const raw=e?.dataTransfer?.getData('text/plain')||'';
+  if(raw.indexOf('repeat-tool:')===0)return raw.slice('repeat-tool:'.length);
+  return repeatDragState?.mode==='copy'?repeatDragState.tool:repeatSelectedTool;
+}
+function renderRepeatEditorAfterChange(){
+  const b=getSelectedBlock();if(!b||b.type!=='repeat')return;
+  b.timesExpr=normalizeRepeatExpr(b.timesExpr||{kind:'value',value:b.times??5});
+  updateCode();scheduleAutoSave();renderRepeatEditor(b);
+}
+function renderRepeatSlot(slot,expr,onChange){
+  slot.innerHTML='';slot.classList.remove('active');
+  slot.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=repeatDragState?.mode==='move'?'move':'copy';slot.classList.add('active');});
+  slot.addEventListener('dragleave',e=>{if(!slot.contains(e.relatedTarget))slot.classList.remove('active');});
+  slot.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();slot.classList.remove('active');
+    if(repeatDragState?.mode==='move'){
+      const moving=repeatDragState;if(moving.node&&moving.node.contains(slot))return;
+      moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();onChange(placed);repeatDragState=null;setRepeatTool('');renderRepeatEditorAfterChange();return;
+    }
+    const tool=getRepeatDropTool(e),placed=createRepeatExpr(tool);if(placed){onChange(placed);repeatDragState=null;setRepeatTool('');renderRepeatEditorAfterChange();}
+  });
+  if(expr?.kind==='math'){
+    const node=document.createElement('div');node.className='repeatMathNode';
+    const left=document.createElement('div');left.className='repeatDropSlot';
+    const op=document.createElement('select');op.className='repeatOperator';op.setAttribute('aria-label','Opération mathématique');
+    [['+','+'],['-','−'],['*','×'],['/','÷'],['%','%']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;op.appendChild(o);});
+    op.value=expr.op||'+';op.addEventListener('change',()=>{expr.op=op.value;onChange(expr);});op.addEventListener('mousedown',e=>e.stopPropagation());
+    const right=document.createElement('div');right.className='repeatDropSlot';
+    renderRepeatSlot(left,expr.a||{kind:'value',value:'0'},(v,silent)=>{expr.a=v;onChange(expr,silent);});
+    renderRepeatSlot(right,expr.b||{kind:'value',value:'0'},(v,silent)=>{expr.b=v;onChange(expr,silent);});
+    node.append(left,op,right);makeRepeatMathMovable(node,expr,onChange);slot.appendChild(node);return;
+  }
+  if(expr?.kind==='variable'){slot.appendChild(makeRepeatVariableSelect(expr,onChange));return;}
+  slot.appendChild(makeRepeatNumberInput(expr,onChange));
+}
+function renderRepeatEditor(b){
+  b.timesExpr=normalizeRepeatExpr(b.timesExpr||{kind:'value',value:b.times??5});
+  const no=document.getElementById('repeatNoVariables');
+  const tools=document.getElementById('repeatTools');
+  const apply=document.getElementById('repeatApply');
+  const names=getDeclaredVariableNames();
+  no.style.display=names.length?'none':'block';
+  tools.querySelectorAll('.repeatTool[data-repeat-expr-tool="variable"]').forEach(x=>x.style.opacity=names.length?'1':'.5');
+  apply.disabled=false;
+  const root=document.getElementById('repeatExprEditor');root.innerHTML='';root.className='repeatExprFrame';
+  const drop=document.createElement('div');drop.className='repeatRootDrop';
+  drop.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=repeatDragState?.mode==='move'?'move':'copy';drop.classList.add('active');});
+  drop.addEventListener('dragleave',e=>{if(!drop.contains(e.relatedTarget))drop.classList.remove('active');});
+  drop.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();drop.classList.remove('active');
+    if(repeatDragState?.mode==='move'){
+      const moving=repeatDragState;if(moving.node&&drop.contains(moving.node))return;
+      moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();b.timesExpr=placed;repeatDragState=null;setRepeatTool('');renderRepeatEditorAfterChange();return;
+    }
+    const tool=getRepeatDropTool(e),placed=createRepeatExpr(tool);if(placed){b.timesExpr=placed;repeatDragState=null;setRepeatTool('');renderRepeatEditorAfterChange();}
+  });
+  drop.addEventListener('click',e=>{
+    if(!repeatSelectedTool||e.target.closest('input,select'))return;
+    const placed=createRepeatExpr(repeatSelectedTool);if(placed){b.timesExpr=placed;setRepeatTool('');renderRepeatEditorAfterChange();}
+  });
+  renderRepeatSlot(drop,b.timesExpr,(v,silent)=>{b.timesExpr=v;if(!silent)renderRepeatEditorAfterChange();});
+  root.appendChild(drop);
+  installRepeatToolHandlers();
+}
+document.addEventListener('drop',e=>{
+  if(!repeatDragState||repeatDragState.mode!=='move')return;
+  if(e.target.closest&&e.target.closest('#repeatEditor .repeatRootDrop,#repeatEditor .repeatDropSlot'))return;
+  e.preventDefault();e.stopPropagation();
+  const moving=repeatDragState;moving.dropHandled=true;repeatDragState=null;setRepeatTool('');
+  if(moving.remove)moving.remove();
+  renderRepeatEditorAfterChange();
+},true);
+
+let ifDragState=null;
+let ifSelectedTool='';
+function normalizeIfExpr(e){
+  if(!e)return {kind:'value',value:'0'};
+  if(e.kind==='math')return {kind:'math',a:normalizeIfExpr(e.a),op:e.op||'+',b:normalizeIfExpr(e.b)};
+  if(e.kind==='variable'){
+    const names=getDeclaredVariableNames();
+    return {kind:'variable',value:names.includes(e.value)?String(e.value):String(names[0]||'')};
+  }
+  return {kind:'value',value:(String(e.value??'').trim()===''?'0':String(e.value))};
+}
+function createIfExpr(tool){
+  if(tool==='math')return {kind:'math',a:{kind:'value',value:'0'},op:'+',b:{kind:'value',value:'0'}};
+  if(tool==='variable'){
+    const names=getDeclaredVariableNames(); if(!names.length)return null;
+    return {kind:'variable',value:names[0]};
+  }
+  return null;
+}
+function setIfTool(tool){
+  ifSelectedTool=tool||'';
+  document.querySelectorAll('#ifTools .ifTool').forEach(el=>el.classList.toggle('selected',el.dataset.ifExprTool===ifSelectedTool));
+}
+function getIfDropTool(e){
+  const raw=e?.dataTransfer?.getData('text/plain')||'';
+  if(raw.indexOf('if-tool:')===0)return raw.slice('if-tool:'.length);
+  return ifDragState?.mode==='copy'?ifDragState.tool:ifSelectedTool;
+}
+function makeIfNumberInput(expr,onChange){
+  const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.autocomplete='off';input.className='ifNumber';
+  input.value=(String(expr.value??'').trim()===''?'0':String(expr.value));
+  const resize=()=>{const n=Math.max(1,String(input.value||'').length);input.style.width=Math.max(30,Math.min(220,n*8+10))+'px';};
+  input.addEventListener('input',()=>{expr.value=input.value;resize();onChange(expr,true);updateCode();scheduleAutoSave();});
+  input.addEventListener('mousedown',e=>e.stopPropagation());resize();return input;
+}
+function makeIfVariableSelect(expr,onChange){
+  const node=document.createElement('div');node.className='ifVariableNode';
+  const select=document.createElement('select');select.className='ifVariableSelect';select.setAttribute('aria-label','Variable dans la condition');
+  const names=getDeclaredVariableNames();names.forEach(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;select.appendChild(o);});
+  if(names.length){if(!names.includes(expr.value))expr.value=names[0];select.value=expr.value;}
+  select.addEventListener('change',()=>{expr.value=select.value;onChange(expr);});select.addEventListener('mousedown',e=>e.stopPropagation());
+  node.appendChild(select);makeIfMovable(node,expr,onChange);return node;
+}
+function makeIfMovable(node,expr,onChange){
+  node.draggable=true;node.addEventListener('dragstart',e=>{if(e.target.closest('select,input')){e.preventDefault();return;}e.stopPropagation();ifDragState={mode:'move',expr:JSON.parse(JSON.stringify(expr)),node,remove:()=>onChange({kind:'value',value:'0'}),removeSilent:()=>onChange({kind:'value',value:'0'},true),dropHandled:false};if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','if-move');}node.classList.add('ifDragging');});
+  node.addEventListener('dragend',e=>{e.stopPropagation();node.classList.remove('ifDragging');const moving=ifDragState;if(moving?.mode==='move'&&moving.node===node&&!moving.dropHandled){moving.remove();moving.dropHandled=true;}if(ifDragState?.node===node)ifDragState=null;renderIfEditorAfterChange();});
+}
+function makeIfMathMovable(node,expr,onChange){makeIfMovable(node,expr,onChange);}
+function installIfToolHandlers(){
+  document.querySelectorAll('#ifTools .ifTool').forEach(tool=>{tool.draggable=true;tool.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setIfTool(tool.dataset.ifExprTool||'');});tool.addEventListener('dragstart',e=>{e.stopPropagation();const type=tool.dataset.ifExprTool||'';ifDragState={mode:'copy',tool:type};setIfTool(type);if(e.dataTransfer){e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain','if-tool:'+type);}});tool.addEventListener('dragend',e=>{e.stopPropagation();ifDragState=null;setIfTool('');});});
+}
+function renderIfSlot(slot,expr,onChange){
+  slot.innerHTML='';slot.classList.remove('active');
+  slot.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=ifDragState?.mode==='move'?'move':'copy';slot.classList.add('active');});
+  slot.addEventListener('dragleave',e=>{if(!slot.contains(e.relatedTarget))slot.classList.remove('active');});
+  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('active');if(ifDragState?.mode==='move'){const moving=ifDragState;if(moving.node&&moving.node.contains(slot))return;moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();onChange(placed);ifDragState=null;setIfTool('');renderIfEditorAfterChange();return;}const tool=getIfDropTool(e),placed=createIfExpr(tool);if(placed){onChange(placed);ifDragState=null;setIfTool('');renderIfEditorAfterChange();}});
+  if(expr?.kind==='math'){
+    const node=document.createElement('div');node.className='ifMathNode';
+    const left=document.createElement('div');left.className='ifDropSlot';
+    const op=document.createElement('select');op.className='ifOperator';op.setAttribute('aria-label','Opération mathématique');[['+','+'],['-','−'],['*','×'],['/','÷'],['%','%']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;op.appendChild(o);});
+    op.value=expr.op||'+';op.addEventListener('change',()=>{expr.op=op.value;onChange(expr);});op.addEventListener('mousedown',e=>e.stopPropagation());
+    const right=document.createElement('div');right.className='ifDropSlot';
+    renderIfSlot(left,expr.a||{kind:'value',value:'0'},(v,silent)=>{expr.a=v;onChange(expr,silent);});renderIfSlot(right,expr.b||{kind:'value',value:'0'},(v,silent)=>{expr.b=v;onChange(expr,silent);});node.append(left,op,right);makeIfMathMovable(node,expr,onChange);slot.appendChild(node);return;
+  }
+  if(expr?.kind==='variable'){slot.appendChild(makeIfVariableSelect(expr,onChange));return;}
+  slot.appendChild(makeIfNumberInput(expr,onChange));
+}
+function renderIfEditorAfterChange(){const b=getSelectedBlock();if(!b||b.type!=='if')return;b.valueExpr=normalizeIfExpr(b.valueExpr||{kind:'value',value:b.value??'0'});b.value=exprText(b.valueExpr);updateCode();scheduleAutoSave();renderIfEditor(b);}
+function renderIfEditor(b){
+  b.valueExpr=normalizeIfExpr(b.valueExpr||{kind:'value',value:b.value??'0'});
+  const tools=document.getElementById('ifTools');const names=getDeclaredVariableNames();
+  tools.querySelectorAll('.ifTool[data-if-expr-tool="variable"]').forEach(x=>x.style.opacity=names.length?'1':'.5');
+  const root=document.getElementById('ifExprEditor');root.innerHTML='';root.className='ifExprFrame';
+  const drop=document.createElement('div');drop.className='ifRootDrop';
+  drop.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect=ifDragState?.mode==='move'?'move':'copy';drop.classList.add('active');});
+  drop.addEventListener('dragleave',e=>{if(!drop.contains(e.relatedTarget))drop.classList.remove('active');});
+  drop.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();drop.classList.remove('active');if(ifDragState?.mode==='move'){const moving=ifDragState;if(moving.node&&drop.contains(moving.node))return;moving.dropHandled=true;const placed=JSON.parse(JSON.stringify(moving.expr));moving.removeSilent();b.valueExpr=placed;ifDragState=null;setIfTool('');renderIfEditorAfterChange();return;}const tool=getIfDropTool(e),placed=createIfExpr(tool);if(placed){b.valueExpr=placed;b.value=exprText(placed);ifDragState=null;setIfTool('');renderIfEditorAfterChange();}});
+  drop.addEventListener('click',e=>{if(!ifSelectedTool||e.target.closest('input,select'))return;const placed=createIfExpr(ifSelectedTool);if(placed){b.valueExpr=placed;b.value=exprText(placed);setIfTool('');renderIfEditorAfterChange();}});
+  renderIfSlot(drop,b.valueExpr,(v,silent)=>{b.valueExpr=v;b.value=exprText(v);if(!silent)renderIfEditorAfterChange();});root.appendChild(drop);installIfToolHandlers();
+}
+document.addEventListener('drop',e=>{if(!ifDragState||ifDragState.mode!=='move')return;if(e.target.closest&&e.target.closest('#ifEditor .ifRootDrop,#ifEditor .ifDropSlot'))return;e.preventDefault();e.stopPropagation();const moving=ifDragState;moving.dropHandled=true;ifDragState=null;setIfTool('');if(moving.remove)moving.remove();renderIfEditorAfterChange();},true);
+
+function populateIfVariables(b){
+  const names=getDeclaredVariableNames();
+  const sel=document.getElementById('ifVariable');
+  const noVars=document.getElementById('ifNoVariables');
+  const apply=document.getElementById('ifApply');
+  sel.innerHTML='';
+  names.forEach(name=>{const opt=document.createElement('option');opt.value=name;opt.textContent=name;sel.appendChild(opt);});
+  if(!names.length){
+    const opt=document.createElement('option');opt.value='';opt.textContent='Créer une variable.';sel.appendChild(opt);
+    sel.disabled=true; noVars.style.display='block'; if(apply)apply.disabled=true; return;
+  }
+  sel.disabled=false; noVars.style.display='none'; if(apply)apply.disabled=false;
+  if(!names.includes(b.variable)) b.variable=names[0];
+  sel.value=b.variable;
+}
+function applyIf(){
+  const b=getSelectedBlock();if(!b||b.type!=='if')return;
+  const names=getDeclaredVariableNames(); if(!names.length)return;
+  b.variable=document.getElementById('ifVariable').value;
+  b.op=document.getElementById('ifOp').value;
+  b.valueExpr=normalizeIfExpr(b.valueExpr||{kind:'value',value:b.value??'0'});
+  b.value=exprText(b.valueExpr);
+  render();
+}
+function applyRead(){
+  const b=getSelectedBlock();if(!b||b.type!=='read')return;
+  const pin=parseInt(document.getElementById('readPin').value);
+  if(pinIsMatrixReserved(pin)) { updateDigitalPinOptions('read',b.pin); return; }
+  if(!getDefinedPins('input').includes(pin)) { updateDigitalPinOptions('read',b.pin); return; }
+  if(getConflictingDigitalPins('read',b.id).has(pin)){ updateDigitalPinOptions('read',b.pin); document.getElementById('readPin').value=(b.pin===''||b.pin==null)?'':String(b.pin); return; }
+  if(!Number.isFinite(pin)){ updateDigitalPinOptions('read',b.pin); return; }
+  b.pin=pin;
+  b.variable=document.getElementById('readVariable').value;
+  b.description=getPinDescription(b.pin);
+  render();
+}
+function applyWrite(){
+  const b=getSelectedBlock();if(!b||b.type!=='write')return;
+  const pin=parseInt(document.getElementById('writePin').value);
+  if(pinIsMatrixReserved(pin)) { updateDigitalPinOptions('write',b.pin); return; }
+  if(!getDefinedPins('output').includes(pin)) { updateDigitalPinOptions('write',b.pin); return; }
+  if(getConflictingDigitalPins('write',b.id).has(pin)){ updateDigitalPinOptions('write',b.pin); document.getElementById('writePin').value=(b.pin===''||b.pin==null)?'':String(b.pin); return; }
+  if(!Number.isFinite(pin)){ updateDigitalPinOptions('write',b.pin); return; }
+  b.pin=pin;
+  b.value=document.getElementById('writeValue').value;
+  b.description=getPinDescription(b.pin);
+  render();
+}
+/* V3-48 — nouvel éditeur Attribuer une valeur
+   Conception simple et autonome :
+   - une seule structure visuelle pour toute l'expression;
+   - les cases de réception sont de vraies zones pointillées;
+   - une variable déposée devient immédiatement un vrai select;
+   - les outils restent disponibles pour être copiés plusieurs fois;
+   - un élément existant peut être glissé hors de l'équation pour être supprimé;
+   - les variables sont conservées dans l'arbre d'expression.
+*/
+function makeEmptyExpr(){ return {kind:'value',value:'0'}; }
+function exprValueText(e){
+  if(!e)return '';
+  if(e.kind==='math')return exprText(e);
+  return e.value===undefined?'':String(e.value);
+}
+function exprClone(e){
+  if(!e)return makeEmptyExpr();
+  if(e.kind==='math')return {kind:'math',a:exprClone(e.a),op:e.op||'+',b:exprClone(e.b)};
+  if(e.kind==='variable')return {kind:'variable',value:String(e.value??'')};
+  return {kind:'value',value:(String(e.value??'').trim()===''?'0':String(e.value))};
+}
+function normalizeExpr(e){
+  if(!e)return makeEmptyExpr();
+  if(e.kind==='math')return {kind:'math',a:normalizeExpr(e.a),op:e.op||'+',b:normalizeExpr(e.b)};
+  if(e.kind==='variable')return {kind:'variable',value:String(e.value??'')};
+  return {kind:'value',value:(String(e.value??'').trim()===''?'0':String(e.value))};
+}
+let assignDragState=null;
+let assignSelectedTool='';
+
+function clearAssignToolSelection(){
+  document.querySelectorAll('#assignEditor .assignTool').forEach(x=>x.classList.remove('selected'));
+}
+function setAssignTool(tool){
+  assignSelectedTool=tool||'';
+  clearAssignToolSelection();
+  if(assignSelectedTool){
+    const el=document.querySelector('#assignEditor .assignTool[data-expr-tool="'+assignSelectedTool+'"]');
+    if(el)el.classList.add('selected');
+  }
+}
+function installAssignToolHandlers(){
+  document.querySelectorAll('#assignEditor .assignTool').forEach(tool=>{
+    tool.draggable=true;
+    tool.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      setAssignTool(tool.dataset.exprTool||'');
+    });
+    tool.addEventListener('dragstart',e=>{
+      e.stopPropagation();
+      const type=tool.dataset.exprTool||'';
+      assignDragState={mode:'copy',tool:type};
+      setAssignTool(type);
+      if(e.dataTransfer){
+        e.dataTransfer.effectAllowed='copy';
+        e.dataTransfer.setData('text/plain','assign-tool:'+type);
+      }
+    });
+    tool.addEventListener('dragend',e=>{
+      e.stopPropagation();
+      assignDragState=null;
+      setAssignTool('');
+    });
+  });
+}
+function getAssignDropTool(e){
+  const raw=e?.dataTransfer?.getData('text/plain')||'';
+  if(raw==='assign-tool:math'||raw==='assign-tool:variable')return raw.slice('assign-tool:'.length);
+  return assignDragState?.mode==='copy'?assignDragState.tool:assignSelectedTool;
+}
+function createAssignExpr(tool){
+  if(tool==='math')return {kind:'math',a:makeEmptyExpr(),op:'+',b:makeEmptyExpr()};
+  if(tool==='variable'){
+    const names=getDeclaredVariableNames();
+    if(!names.length)return null;
+    return {kind:'variable',value:names[0]};
+  }
+  return null;
+}
+function makeAssignNumberInput(expr,onChange){
+  const input=document.createElement('input');
+  input.type='text'; input.inputMode='decimal'; input.autocomplete='off';
+  input.className='assignNumber'; input.value=(String(expr.value??'').trim()===''?'0':String(expr.value));
+  const resize=()=>{
+    const n=Math.max(1,String(input.value||'').length);
+    // Toujours assez large pour au moins deux chiffres, puis s'élargit avec le nombre.
+    input.style.width=Math.max(30,Math.min(220,n*8+10))+'px';
+  };
+  input.addEventListener('input',()=>{
+    // Ne pas reconstruire l'éditeur pendant la saisie : sinon le champ est
+    // recréé et le curseur revient au début après chaque caractère.
+    expr.value=input.value;
+    resize();
+    onChange(expr,true);
+    updateCode();
+    scheduleAutoSave();
+  });
+  input.addEventListener('mousedown',e=>e.stopPropagation());
+  resize();
+  return input;
+}
+function makeAssignVariableSelect(expr,onChange){
+  const select=document.createElement('select');
+  select.className='assignVariableSelect';
+  select.setAttribute('aria-label','Variable dans l’expression');
+  const names=getDeclaredVariableNames();
+  names.forEach(name=>{
+    const option=document.createElement('option'); option.value=name; option.textContent=name; select.appendChild(option);
+  });
+  if(names.length){
+    if(!names.includes(expr.value))expr.value=names[0];
+    select.value=expr.value;
+  }
+  select.addEventListener('change',()=>{expr.value=select.value;onChange(expr);});
+  select.addEventListener('mousedown',e=>e.stopPropagation());
+  return select;
+}
+function renderAssignNode(host,expr,onChange){
+  host.innerHTML='';
+  expr=expr||makeEmptyExpr();
+  if(expr.kind==='variable'){
+    const node=document.createElement('div'); node.className='assignVariableNode';
+    node.appendChild(makeAssignVariableSelect(expr,onChange));
+    makeAssignMovable(node,expr,onChange);
+    host.appendChild(node); return;
+  }
+  if(expr.kind==='math'){
+    const node=document.createElement('div'); node.className='assignMathNode';
+    const left=document.createElement('div'); left.className='assignDropSlot';
+    const op=document.createElement('select'); op.className='assignOperator'; op.setAttribute('aria-label','Opération mathématique');
+    [['+','+'],['-','−'],['*','×'],['/','÷'],['%','%']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;op.appendChild(o);});
+    op.value=expr.op||'+'; op.addEventListener('change',()=>{expr.op=op.value;onChange(expr);});
+    const right=document.createElement('div'); right.className='assignDropSlot';
+    renderAssignSlot(left,expr.a||makeEmptyExpr(),(v,silent)=>{expr.a=v;onChange(expr,silent);});
+    renderAssignSlot(right,expr.b||makeEmptyExpr(),(v,silent)=>{expr.b=v;onChange(expr,silent);});
+    node.append(left,op,right);
+    makeAssignMovable(node,expr,onChange);
+    host.appendChild(node); return;
+  }
+  host.appendChild(makeAssignNumberInput(expr,onChange));
+}
+function makeAssignMovable(node,expr,onChange){
+  node.draggable=true;
+  node.addEventListener('dragstart',e=>{
+    if(e.target.closest('select,input')){e.preventDefault();return;}
+    e.stopPropagation();
+    assignDragState={
+      mode:'move',expr:exprClone(expr),node,
+      remove:()=>onChange(makeEmptyExpr()),
+      removeSilent:()=>onChange(makeEmptyExpr(),true),
+      dropHandled:false
+    };
+    if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','assign-move');}
+    node.classList.add('assignDragging');
+  });
+  node.addEventListener('dragend',e=>{
+    e.stopPropagation();
+    node.classList.remove('assignDragging');
+    const moving=assignDragState;
+    if(moving?.mode==='move' && moving.node===node && !moving.dropHandled){
+      moving.remove();
+      moving.dropHandled=true;
+    }
+    if(assignDragState?.node===node)assignDragState=null;
+    renderAssignEditorAfterChange();
+  });
+}
+function renderAssignSlot(slot,expr,onChange){
+  slot.innerHTML='';
+  slot.classList.remove('filled','active');
+  slot.addEventListener('dragover',e=>{
+    e.preventDefault(); e.stopPropagation();
+    if(e.dataTransfer)e.dataTransfer.dropEffect=assignDragState?.mode==='move'?'move':'copy';
+    slot.classList.add('active');
+  });
+  slot.addEventListener('dragenter',e=>{e.preventDefault();e.stopPropagation();slot.classList.add('active');});
+  slot.addEventListener('dragleave',e=>{if(!slot.contains(e.relatedTarget))slot.classList.remove('active');});
+  slot.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();slot.classList.remove('active');
+    if(assignDragState?.mode==='move'){
+      const moving=assignDragState;
+      if(moving.node && (slot===moving.node || moving.node.contains(slot)))return;
+      const placed=exprClone(moving.expr);
+      moving.dropHandled=true;
+      moving.removeSilent();
+      onChange(placed);
+      assignDragState=null; setAssignTool(''); renderAssignEditorAfterChange(); return;
+    }
+    const tool=getAssignDropTool(e); const placed=createAssignExpr(tool);
+    if(!placed)return;
+    onChange(placed); assignDragState=null; setAssignTool(''); renderAssignEditorAfterChange();
+  });
+  slot.addEventListener('click',e=>{
+    if(!assignSelectedTool)return;
+    e.preventDefault();e.stopPropagation();
+    const placed=createAssignExpr(assignSelectedTool); if(!placed)return;
+    onChange(placed); setAssignTool(''); renderAssignEditorAfterChange();
+  });
+  const content=document.createElement('div'); content.className='assignSlotContent';
+  renderAssignNode(content,expr,(v,silent)=>{onChange(v,silent);if(!silent)renderAssignEditorAfterChange();});
+  slot.appendChild(content);
+  if(expr.kind!=='value'||String(expr.value??'')!=='')slot.classList.add('filled');
+}
+
+function renderAssignEditorAfterChange(){
+  const b=getSelectedBlock(); if(!b||b.type!=='assign')return;
+  b.expr=normalizeExpr(b.expr); updateCode(); scheduleAutoSave();
+  renderAssignEditor(b);
+}
+function renderAssignEditor(b){
+  const names=getDeclaredVariableNames();
+  const main=document.getElementById('assignVariable');
+  const no=document.getElementById('assignNoVariables');
+  const apply=document.getElementById('assignApply');
+  main.innerHTML='';
+  names.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;main.appendChild(o);});
+  if(!names.length){
+    const o=document.createElement('option');o.value='';o.textContent='Créer une variable.';main.appendChild(o);
+    main.disabled=true; no.style.display='block'; apply.disabled=true; return;
+  }
+  main.disabled=false; no.style.display='none'; apply.disabled=false;
+  if(!names.includes(b.variable))b.variable=names[0]; main.value=b.variable;
+  main.onchange=()=>{b.variable=main.value;updateCode();scheduleAutoSave();};
+  b.expr=normalizeExpr(b.expr);
+  const root=document.getElementById('assignExprEditor');
+  root.innerHTML='';
+  root.className='assignExprFrame';
+  const drop=document.createElement('div'); drop.className='assignRootDrop';
+  drop.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';drop.classList.add('active');});
+  drop.addEventListener('dragleave',e=>{if(!drop.contains(e.relatedTarget))drop.classList.remove('active');});
+  drop.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();drop.classList.remove('active');
+    if(assignDragState?.mode==='move'){
+      // déposer un élément sur la racine remplace l'expression complète
+      const moving=assignDragState; const placed=exprClone(moving.expr); moving.dropHandled=true; moving.removeSilent(); b.expr=placed; assignDragState=null; setAssignTool(''); renderAssignEditorAfterChange(); return;
+    }
+    const tool=getAssignDropTool(e); const placed=createAssignExpr(tool); if(!placed)return;
+    b.expr=placed; assignDragState=null; setAssignTool(''); renderAssignEditorAfterChange();
+  });
+  drop.addEventListener('click',e=>{
+    if(!assignSelectedTool)return;
+    if(e.target.closest('input,select'))return;
+    const placed=createAssignExpr(assignSelectedTool); if(!placed)return;
+    b.expr=placed; setAssignTool(''); renderAssignEditorAfterChange();
+  });
+  const content=document.createElement('div'); content.className='assignRootContent';
+  renderAssignNode(content,b.expr,(v,silent)=>{b.expr=v;if(!silent)renderAssignEditorAfterChange();});
+  drop.appendChild(content); root.appendChild(drop);
+  installAssignToolHandlers();
+}
+
+document.addEventListener('drop',e=>{
+  if(!assignDragState||assignDragState.mode!=='move')return;
+  if(e.target.closest && e.target.closest('#assignEditor .assignDropSlot,#assignEditor .assignRootDrop'))return;
+  e.preventDefault(); e.stopPropagation();
+  const moving=assignDragState;
+  moving.dropHandled=true;
+  assignDragState=null; setAssignTool('');
+  if(moving.remove)moving.remove();
+  renderAssignEditorAfterChange();
+},true);
+
+function populateAssignEditor(b){ renderAssignEditor(b); }
+
+function showVarNameError(message){
+  const el=document.getElementById('varNameError');
+  if(!el)return;
+  el.textContent='⛔ '+message;
+  el.style.display='inline-block';
+}
+function hideVarNameError(){
+  const el=document.getElementById('varNameError');
+  if(el)el.style.display='none';
+}
+document.addEventListener('click',e=>{
+  if(e.target && e.target.id==='varName') hideVarNameError();
+});
+
+function renameVariableReferences(oldName,newName,excludeId){
+  if(!oldName || !newName || oldName===newName)return;
+  function renameExpr(e){
+    if(!e)return;
+    if(e.kind==='variable'){
+      if(e.value===oldName)e.value=newName;
+      return;
+    }
+    if(e.kind==='math'){
+      renameExpr(e.a); renameExpr(e.b); return;
+    }
+    // Compatibilité avec d'anciens formats où une expression pouvait être une chaîne.
+    if(e.value===oldName)e.value=newName;
+  }
+  function renameBody(body){
+    (body||[]).forEach(x=>{
+      if(x.id!==excludeId && x.type==='var' && x.name===oldName){
+        // Une autre définition du même nom ne devrait normalement pas exister,
+        // mais on la laisse intacte pour ne pas fusionner deux variables.
+      }
+      if(x.type==='read' && x.variable===oldName)x.variable=newName;
+      if(x.type==='assign' && x.variable===oldName)x.variable=newName;
+      if(x.type==='if' && x.variable===oldName)x.variable=newName;
+      if(x.type==='delay'){
+        renameExpr(x.delayExpr);
+        if(x.delayExpr==null && x.ms===oldName)x.ms=newName;
+      }
+      if(x.type==='repeat'){
+        renameExpr(x.timesExpr);
+        if(x.timesExpr==null && x.times===oldName)x.times=newName;
+      }
+      if(x.type==='if'){
+        renameExpr(x.valueExpr);
+        if(x.valueExpr==null && x.value===oldName)x.value=newName;
+      }
+      if(x.type==='assign')renameExpr(x.expr);
+      if(x.type==='math'){renameExpr(x.a);renameExpr(x.b);}
+      if(x.type==='repeat'||x.type==='if')renameBody(x.body);
+      if(x.type==='if')renameBody(x.elseBody);
+    });
+  }
+  renameBody(setupBlocks);
+  renameBody(blocks);
+  functions.forEach(f=>renameBody(f.body));
+}
+
+function applyVar(){
+  const b=getSelectedBlock();if(!b||b.type!=='var')return;
+  const input=document.getElementById('varName');
+  const typed=input.value.trim();
+  const name=typed||uniqueVariableName('maVariable');
+  if(variableNameExists(name,b.id)){
+    showVarNameError('Ce nom de variable est déjà utilisé. Choisissez un autre nom.');
+    return;
+  }
+  hideVarNameError();
+  const oldName=b.name;
+  if(oldName && oldName!==name) renameVariableReferences(oldName,name,b.id);
+  b.name=name;
+  b.value=document.getElementById('varInitial').value.trim()||'0';
+  render();
+}
+function applyAssign(){
+  const b=getSelectedBlock();if(!b||b.type!=='assign')return;
+  const names=getDeclaredVariableNames();if(!names.length)return;
+  b.variable=document.getElementById('assignVariable').value;
+  b.expr=normalizeExpr(b.expr);
+  render();
+}
+function applyMath(){
+  const b=getSelectedBlock();if(!b||b.type!=='math')return;
+  b.op=document.getElementById('mathOp').value;
+  render();
+}
+function applyFunc(){
+  const f=functions.find(x=>x.id===selectedId);
+  if(!f)return;
+  f.name=document.getElementById('funcName').value.trim()||'maFonction';
+  f.description=document.getElementById('funcDescription').value.trim();
+  render();
+}
+function populateCallFunctions(b){
+  const names=[...new Set(functions.map(f=>(f.name||'').trim()).filter(Boolean))];
+  const sel=document.getElementById('callName');
+  const noFuncs=document.getElementById('callNoFunctions');
+  const apply=document.getElementById('callApply');
+  sel.innerHTML='';
+  names.forEach(name=>{
+    const opt=document.createElement('option');
+    opt.value=name;
+    opt.textContent=name;
+    sel.appendChild(opt);
+  });
+  if(!names.length){
+    const opt=document.createElement('option');
+    opt.value='';
+    opt.textContent='Créer une fonction.';
+    sel.appendChild(opt);
+    sel.disabled=true;
+    noFuncs.style.display='block';
+    if(apply) apply.disabled=true;
+    return;
+  }
+  sel.disabled=false;
+  noFuncs.style.display='none';
+  if(!names.includes(b.name)) b.name=names[0];
+  sel.value=b.name;
+  if(apply) apply.disabled=false;
+}
+function applyCall(){
+  const b=locateBlock(selectedId)?.block;
+  if(!b||b.type!=='call')return;
+  const name=document.getElementById('callName').value;
+  if(!name)return;
+  b.name=name;
+  render();
+}
+function columns(frame){
+  const out=[];
+  // Chaque matrice est compensée de 90° antihoraire pour l'orientation physique du MAX7219.
+  for(let m=0;m<4;m++){
+    const rotated=rotate90CCW(frame[m]);
+    for(let c=0;c<8;c++){
+      let bits=0;
+      for(let r=0;r<8;r++) if(rotated[r][c]) bits|=(1<<r);
+      out.push(bits);
+    }
+  }
+  return out;
+}
+function byteBinary(v){
+  return 'B'+v.toString(2).padStart(8,'0');
+}
+// Le module MAX7219 doit afficher le motif tourné de 90° antihoraire par rapport au dessin.
+function rotate90CCW(matrix){
+  const out=Array.from({length:8},()=>Array(8).fill(false));
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) out[7-c][r]=matrix[r][c];
+  return out;
+}
+function matrixColumns(frame,m){
+  const out=[];
+  const rotated=rotate90CCW(frame[m]);
+  for(let c=0;c<8;c++){
+    let bits=0;
+    for(let r=0;r<8;r++) if(rotated[r][c]) bits|=(1<<r);
+    out.push(bits);
+  }
+  return out;
+}
+function codeForFrame(frame,indent='  '){
+  let s='';
+  for(let m=0;m<4;m++){
+    s+=`${indent}// ===== MATRICE ${m+1} =====\n`;
+    const cols=matrixColumns(frame,m);
+    for(let c=0;c<8;c++){
+      s+=`  ledMatrix.setColumn(${m*8+c}, ${byteBinary(cols[c])});\n`;
+    }
+  }
+  s+=`${indent}ledMatrix.commit();`;
+  return s;
+}
+function codeForScroll(b,indent){
+  const dir=b.scrollDirection||'right';
+  const step=Math.max(1,b.scrollStep||1);
+  const speed=Math.max(0,b.scrollSpeed??100);
+  const count=Math.max(1,b.scrollCount||32);
+  let out='';
+
+  // motif[] représente l'écran logique de 32 x 8 tel que l'élève le dessine.
+  // Chaque octet représente une colonne logique (8 DEL verticales).
+  const logicalCols=[];
+  for(let c=0;c<32;c++){
+    let bits=0;
+    const m=Math.floor(c/8), col=c%8;
+    for(let r=0;r<8;r++) if(b.frame[m][r][col]) bits|=(1<<r);
+    logicalCols.push(bits);
+  }
+
+  out+=`${indent}// Défilement du motif (${dir==='right'?'droite':dir==='left'?'gauche':dir==='up'?'haut':'bas'})\n`;
+  out+=`${indent}const byte motif[32] = { ${logicalCols.map(byteBinary).join(', ')} };\n`;
+
+  const total=count*step;
+  out+=`${indent}for (int decalage = 0; decalage <= ${total}; decalage += ${step}) {\n`;
+
+  if(dir==='right' || dir==='left'){
+    // Le défilement horizontal se fait dans l'écran logique 32 x 8.
+    // Ensuite, chaque matrice est reconvertie dans l'orientation physique
+    // (90° antihoraire). Cela permet au motif de passer M1 -> M2 -> M3 -> M4
+    // ou M4 -> M3 -> M2 -> M1 sans changer d'axe.
+    out+=`${indent}  for (int matrice = 0; matrice < 4; matrice++) {\n`;
+    out+=`${indent}    for (int ligne = 0; ligne < 8; ligne++) {\n`;
+    out+=`${indent}      byte valeur = 0;\n`;
+    out+=`${indent}      for (int colonne = 0; colonne < 8; colonne++) {\n`;
+    out+=`${indent}        int destination = matrice * 8 + colonne;\n`;
+    if(dir==='right'){
+      if(b.scrollLoop){
+        out+=`${indent}        int source = (destination - decalage) % 32;\n`;
+        out+=`${indent}        if (source < 0) source += 32;\n`;
+      }else{
+        out+=`${indent}        int source = destination - decalage;\n`;
+      }
+    }else{
+      if(b.scrollLoop){
+        out+=`${indent}        int source = (destination + decalage) % 32;\n`;
+      }else{
+        out+=`${indent}        int source = destination + decalage;\n`;
+      }
+    }
+    if(b.scrollLoop){
+      out+=`${indent}        if (motif[source] & (1 << ligne)) {\n`;
+    }else{
+      out+=`${indent}        if (source >= 0 && source < 32 && (motif[source] & (1 << ligne))) {\n`;
+    }
+    // Rotation 90 CCW : colonne visuelle -> bit physique 7-colonne.
+    out+=`${indent}          valeur |= (1 << (7 - colonne));\n`;
+    out+=`${indent}        }\n`;
+    out+=`${indent}      }\n`;
+    // Après rotation, la colonne physique correspond à la ligne visuelle.
+    out+=`${indent}      ledMatrix.setColumn(matrice * 8 + ligne, valeur);\n`;
+    out+=`${indent}    }\n`;
+    out+=`${indent}  }\n`;
+  }else if(dir==='down'){
+    // Défilement vertical dans chaque matrice.
+    for(let c=0;c<32;c++){
+      // Le code est généré à partir du motif logique afin de conserver
+      // exactement l'orientation actuelle des matrices.
+    }
+    out+=`${indent}  for (int matrice = 0; matrice < 4; matrice++) {\n`;
+    out+=`${indent}    for (int ligne = 0; ligne < 8; ligne++) {\n`;
+    out+=`${indent}      byte valeur = 0;\n`;
+    out+=`${indent}      for (int colonne = 0; colonne < 8; colonne++) {\n`;
+    if(b.scrollLoop){
+      out+=`${indent}        int sourceLigne = (ligne - decalage) % 8;\n`;
+      out+=`${indent}        if (sourceLigne < 0) sourceLigne += 8;\n`;
+      out+=`${indent}        if (motif[matrice * 8 + colonne] & (1 << sourceLigne)) {\n`;
+    }else{
+      out+=`${indent}        int sourceLigne = ligne - decalage;\n`;
+      out+=`${indent}        if (sourceLigne >= 0 && sourceLigne < 8 && (motif[matrice * 8 + colonne] & (1 << sourceLigne))) {\n`;
+    }
+    out+=`${indent}          valeur |= (1 << (7 - colonne));\n`;
+    out+=`${indent}        }\n`;
+    out+=`${indent}      }\n`;
+    out+=`${indent}      ledMatrix.setColumn(matrice * 8 + ligne, valeur);\n`;
+    out+=`${indent}    }\n`;
+    out+=`${indent}  }\n`;
+  }else{
+    out+=`${indent}  for (int matrice = 0; matrice < 4; matrice++) {\n`;
+    out+=`${indent}    for (int ligne = 0; ligne < 8; ligne++) {\n`;
+    out+=`${indent}      byte valeur = 0;\n`;
+    out+=`${indent}      for (int colonne = 0; colonne < 8; colonne++) {\n`;
+    if(b.scrollLoop){
+      out+=`${indent}        int sourceLigne = (ligne + decalage) % 8;\n`;
+      out+=`${indent}        if (motif[matrice * 8 + colonne] & (1 << sourceLigne)) {\n`;
+    }else{
+      out+=`${indent}        int sourceLigne = ligne + decalage;\n`;
+      out+=`${indent}        if (sourceLigne >= 0 && sourceLigne < 8 && (motif[matrice * 8 + colonne] & (1 << sourceLigne))) {\n`;
+    }
+    out+=`${indent}          valeur |= (1 << (7 - colonne));\n`;
+    out+=`${indent}        }\n`;
+    out+=`${indent}      }\n`;
+    out+=`${indent}      ledMatrix.setColumn(matrice * 8 + ligne, valeur);\n`;
+    out+=`${indent}    }\n`;
+    out+=`${indent}  }\n`;
+  }
+
+  out+=`${indent}  ledMatrix.commit();\n`;
+  if(speed>0) out+=`${indent}  if (decalage < ${total}) delay(${speed});\n`;
+  out+=`${indent}}\n`;
+  return out;
+}
+function codeForBody(body,indent='  '){
+  let out='';
+  body.forEach(b=>{
+    const i=indent;
+    if(b.type==='max'){
+      const lum=Number.isFinite(Number(b.brightness))?Math.max(0,Math.min(15,Number(b.brightness))):8;
+      const fadeIn=b.fadeEffect==='in';
+      const fadeSpeed=Math.max(0,Number.isFinite(Number(b.fadeSpeed))?Number(b.fadeSpeed):50);
+      out+=`\n${i}// ******** AFFICHER UN MOTIF ********\n`;
+      if(fadeIn){
+        out+=`${i}ledMatrix.clear();\n`;
+        out+=`${i}ledMatrix.commit();\n`;
+        const dureeEtapesIn = Math.max(1, lum);
+        const delaiIn = fadeSpeed > 0 ? Math.max(1, Math.round(fadeSpeed / dureeEtapesIn)) : 0;
+        out+=`${i}for (int luminosite = 1; luminosite <= ${lum}; luminosite++) {\n`;
+        out+=`${i}  ledMatrix.setIntensity(luminosite);\n`;
+        out+=`${i}  luminositeActuelle = luminosite;\n`;
+        out+=codeForFrame(b.frame,i+'  ');
+        if(delaiIn>0) out+=`${i}  delay(${delaiIn});\n`;
+        out+=`${i}}\n`;
+      }else{
+        out+=`${i}ledMatrix.setIntensity(${lum});\n`;
+        out+=`${i}luminositeActuelle = ${lum};\n`;
+        if(b.scrollEnabled){
+          out+=codeForScroll(b,i);
+        }else{
+          out+=codeForFrame(b.frame,i);
+        }
+      }
+    }else if(b.type==='delay'){
+      const delayExpr=exprText(b.delayExpr||{kind:'value',value:b.ms??500});
+      out+=`${i}// DÉLAI\n${i}delay((unsigned long)(${delayExpr}));\n`;
+    }else if(b.type==='clear'){
+      const fadeOut=!!b.fadeOut;
+      const fadeSpeed=Math.max(0,Number.isFinite(Number(b.fadeSpeed))?Number(b.fadeSpeed):500);
+      if(fadeOut){
+        out+=`${i}// EFFACER — DISPARITION PROGRESSIVE\n`;
+        out+=`${i}int dureeFadeOut = ${fadeSpeed};\n`;
+        out+=`${i}int departFadeOut = luminositeActuelle;\n`;
+        out+=`${i}int delaiFadeOut = (departFadeOut > 0 && dureeFadeOut > 0) ? max(1, dureeFadeOut / departFadeOut) : 0;\n`;
+        out+=`${i}for (int luminosite = departFadeOut; luminosite >= 1; luminosite--) {\n`;
+        out+=`${i}  ledMatrix.setIntensity(luminosite);\n`;
+        out+=`${i}  luminositeActuelle = luminosite;\n`;
+        out+=`${i}  if (delaiFadeOut > 0) delay(delaiFadeOut);\n`;
+        out+=`${i}}\n`;
+        out+=`${i}ledMatrix.clear();\n${i}ledMatrix.commit();\n`;
+      }else{
+        out+=`${i}// EFFACER\n${i}ledMatrix.clear();\n${i}ledMatrix.commit();\n`;
+      }
+    }else if(b.type==='pinDesc'){
+      // Bloc de configuration uniquement : aucune instruction Arduino.
+
+    }else if(b.type==='read'){
+      out+=`${i}// DIGITALREAD${b.description ? ' — '+b.description : ''}\n${i}${b.variable} = digitalRead(D${b.pin});\n`;
+    }else if(b.type==='write'){
+      out+=`${i}// DIGITALWRITE${b.description ? ' — '+b.description : ''}\n${i}digitalWrite(D${b.pin}, ${b.value});\n`;
+    }else if(b.type==='var'){
+      out+=`${i}// VARIABLE\n${i}${b.name} = ${b.value};\n`;
+    }else if(b.type==='assign'){
+      out+=`${i}// ATTRIBUER UNE VALEUR\n${i}${b.variable} = ${exprText(b.expr)};\n`;
+    }else if(b.type==='math'){
+      out+=`${i}// OPÉRATION MATHÉMATIQUE (expression)\n${i}// ${exprText(b.a)} ${b.op} ${exprText(b.b)}\n`;
+
+    }else if(b.type==='call'){
+      out+=`${i}// APPELER UNE FONCTION\n${i}${b.name}();\n`;
+    }else if(b.type==='repeat'){
+      const repeatExpr=exprText(b.timesExpr||{kind:'value',value:b.times??5});
+      out+=`\n${i}// ******** RÉPÉTER ${repeatExpr} FOIS ********\n${i}for (int i = 0; i < (int)(${repeatExpr}); i++) {\n`;
+      out+=codeForBody(b.body,i+'  ');
+      out+=`${i}}\n`;
+    }else if(b.type==='if'){
+      const cmpMap={'==':'==','!=':'!=','<':'<','>':'>','<=':'<=','>=':'>='};
+      const cmp=cmpMap[b.op]||'>';
+      const ifExpr=exprText(b.valueExpr||{kind:'value',value:b.value??'0'});
+      out+=`\n${i}// ******** SI ${b.variable||'maVariable'} ${cmp} ${ifExpr} ********\n${i}if (${b.variable||'maVariable'} ${cmp} ${ifExpr}) {\n`;
+      out+=codeForBody(b.body,i+'  ');
+      out+=`${i}}`;
+      if(b.elseEnabled && b.elseBody && b.elseBody.length){
+        out+=` else {\n`;
+        out+=codeForBody(b.elseBody,i+'  ');
+        out+=`${i}}`;
+      }
+      out+='\n';
+    }
+  });
+  return out;
+}
+function updateCode(){
+  let code='';
+  functions.forEach(f=>{
+    code+=`// ==================================================\n// FONCTION : ${f.name}\n// ==================================================\n`;
+    code+=`void ${f.name}() {\n`;
+    code+=codeForBody(f.body,'  ');
+    code+='}\n\n';
+  });
+
+  code+=`#include <SPI.h>
+#include "LedMatrix.h"
+
+#define NUMBER_OF_DEVICES 4
+#define CS_PIN D4
+
+LedMatrix ledMatrix = LedMatrix(NUMBER_OF_DEVICES, CS_PIN);
+int luminositeActuelle = 8;
+
+`;
+
+  // Les variables existent globalement pour pouvoir être utilisées partout,
+  // mais leur valeur initiale est donnée dans SETUP, une seule fois.
+  const vars=[];
+  function collect(body){
+    body.forEach(b=>{
+      if(b.type==='var' && !vars.includes(b.name))vars.push(b.name);
+      if(b.type==='read' && !vars.includes(b.variable))vars.push(b.variable);
+      if(b.type==='repeat'||b.type==='if')collect(b.body);
+    });
+  }
+  collect(setupBlocks); collect(blocks); functions.forEach(f=>collect(f.body));
+  vars.forEach(v=>{code+=`int ${v};\n`;});
+  if(vars.length)code+='\n';
+
+  code+=`void setup() {
+  ledMatrix.init();
+  ledMatrix.setIntensity(8);
+  luminositeActuelle = 8;
+`;
+  if(setupBlocks.length) code+=codeForBody(setupBlocks,'  ');
+  const inputPins=[],outputPins=[];
+  function collectPins(body){
+    body.forEach(b=>{
+      if(b.type==='read'&&!inputPins.includes(b.pin))inputPins.push(b.pin);
+      if(b.type==='write'&&!outputPins.includes(b.pin))outputPins.push(b.pin);
+      if(b.type==='repeat'||b.type==='if')collectPins(b.body);
+      if(b.type==='if' && b.elseEnabled)collectPins(b.elseBody||[]);
+    });
+  }
+  collectPins(blocks);functions.forEach(f=>collectPins(f.body));
+  inputPins.forEach(pin=>code+=`  pinMode(D${pin}, INPUT);\n`);
+  outputPins.forEach(pin=>code+=`  pinMode(D${pin}, OUTPUT);\n`);
+  code+=`}
+
+void loop() {`;
+  if(blocks.length) code+=codeForBody(blocks,'  ');
+  else code+='\n  // Ajoutez des blocs dans le programme.';
+  code+=`\n}\n`;
+
+  document.getElementById('codeBox').textContent=code;
+}
+
+let draggedBlockId=null;
+
+function dragStart(e){
+  e.dataTransfer.setData('paletteType',e.currentTarget.dataset.type);
+  e.dataTransfer.effectAllowed='copy';
+}
+document.querySelectorAll('.palette .block').forEach(x=>x.addEventListener('dragstart',dragStart));
+
+document.addEventListener('dragover',e=>{
+  const zone=e.target.closest('.insertZone,.blockSlot,.functionShelf,#dropzone,#setupBody');
+  if(!zone)return;
+  e.preventDefault();
+  document.querySelectorAll('.insertZone.active,.blockSlot.active,#setupBody.active').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.functionShelf.dropTargetActive').forEach(x=>x.classList.remove('dropTargetActive'));
+  if(zone.classList.contains('insertZone') || zone.classList.contains('blockSlot')) zone.classList.add('active');
+  if(zone.classList.contains('functionShelf')) zone.classList.add('dropTargetActive');
+  if(zone.id==='setupBody') zone.classList.add('active');
+  e.dataTransfer.dropEffect=(draggedBlockId || e.dataTransfer.getData('moveBlockId'))?'move':'copy';
+});
+
+document.addEventListener('drop',e=>{
+  const zone=e.target.closest('.insertZone,.blockSlot,.functionShelf,#dropzone,#setupBody');
+  if(!zone)return;
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.insertZone.active,.blockSlot.active,#setupBody.active').forEach(x=>x.classList.remove('active'));
+
+  const palette=e.dataTransfer.getData('paletteType');
+  const moveId=parseInt(e.dataTransfer.getData('moveBlockId'))||draggedBlockId||0;
+
+  if(zone.classList.contains('functionShelf')){
+    if(palette==='func'){
+      zone.classList.remove('dropTargetActive');
+      addBlock('func');
+    }
+    return;
+  }
+
+  if(zone.classList.contains('insertZone')){
+    let body=getTargetBody(zone.dataset.owner);
+    if(!body)return;
+    if(palette==='var' && body!==setupBlocks){
+      const item=makeBlock('var'); setupBlocks.push(item); selectedId=item.id; render(); return;
+    }
+    const index=parseInt(zone.dataset.index)||0;
+    const isEndZone=zone.classList.contains('endZone');
+
+    if(palette){
+      if(palette==='func'){addBlock('func');return;}
+      const item=makeBlock(palette);
+      body.splice(index,0,item);
+      selectedId=item.id;
+      render();
+      return;
+    }
+
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      const item=source.block;
+      if(item.type==='var' && body!==setupBlocks){
+        source.body.splice(source.index,1); setupBlocks.push(item); selectedId=item.id; render(); return;
+      }
+
+      // Prevent dropping a container into itself or its descendants.
+      if(item.body && bodyContains(item.body, item.id))return;
+      if(item.body && bodyContains(item.body, parseInt(zone.dataset.owner)))return;
+
+      // If moving within the same body, remove first and compensate for index shift.
+      source.body.splice(source.index,1);
+      const isEnd = zone.dataset.end==='1';
+      let targetIndex = isEnd ? body.length : index;
+      // Pour une insertion entre deux blocs, il faut compenser le retrait
+      // du bloc source lorsqu'il se trouvait avant la zone cible.
+      // À la fin, targetIndex est déjà calculé après le retrait : aucune
+      // compensation ne doit être faite, sinon le bloc s'arrête une place trop tôt.
+      if(!isEnd && source.body===body && source.index<targetIndex)targetIndex--;
+      targetIndex=Math.max(0,Math.min(targetIndex,body.length));
+      body.splice(targetIndex,0,item);
+
+      selectedId=item.id;
+      render();
+      return;
+    }
+    return;
+  }
+
+  if(zone.id==='setupBody'){
+    if(palette){
+      if(palette==='func')return;
+      const item=makeBlock(palette); setupBlocks.push(item); selectedId=item.id; render(); return;
+    }
+    if(moveId){
+      const source=locateBlock(moveId); if(!source)return;
+      const item=source.block; source.body.splice(source.index,1); setupBlocks.push(item); selectedId=item.id; render();
+    }
+    return;
+  }
+
+  if(zone.classList.contains('blockSlot')){
+    let body=null;
+    const ownerEl=zone.closest('.programBlock');
+    if(ownerEl){
+      const found=locateBlock(parseInt(ownerEl.dataset.blockId));
+      if(found)body=found.block.body;
+    }else{
+      const card=zone.closest('.functionCard');
+      if(card){
+        const index=[...document.querySelectorAll('.functionCard')].indexOf(card);
+        if(functions[index])body=functions[index].body;
+      }
+    }
+    if(!body)return;
+
+    if(palette && palette!=='func'){
+      const item=makeBlock(palette);
+      if(palette==='var' && body!==setupBlocks) setupBlocks.push(item); else body.push(item);
+      selectedId=item.id;render();return;
+    }
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      if(source.body===body && source.index===body.length-1)return;
+      const item=source.block;
+      source.body.splice(source.index,1);
+      if(item.type==='var' && body!==setupBlocks) setupBlocks.push(item); else body.push(item);
+      selectedId=item.id;render();
+    }
+    return;
+  }
+
+  if(zone.id==='dropzone'){
+    // Dans tout l'espace libre du programme, un bloc déplacé est automatiquement ajouté à la fin.
+    if(moveId){
+      const source=locateBlock(moveId);
+      if(!source)return;
+      const item=source.block;
+      source.body.splice(source.index,1);
+      blocks.push(item);
+      selectedId=item.id;
+      render();
+      return;
+    }
+    if(palette){
+      if(palette==='func'){addBlock('func');return;}
+      const item=makeBlock(palette);
+      if(palette==='var') setupBlocks.push(item); else blocks.push(item);
+      selectedId=item.id;render();
+    }
+  }
+});
+
+function normalizeMaxBlocks(body){
+  if(!Array.isArray(body))return;
+  body.forEach(b=>{
+    if(b.type==='math'){ b.type='assign'; b.variable=b.variable||'maVariable'; b.expr={kind:'math',a:normalizeExpr(b.a),op:b.op||'+',b:normalizeExpr(b.b)}; }
+    if(b.type==='assign'){ b.expr=normalizeExpr(b.expr); }
+    if(b.type==='repeat'){ b.timesExpr=normalizeRepeatExpr(b.timesExpr||{kind:'value',value:b.times??5}); }
+    if(b.type==='math'){ b.a=normalizeExpr(b.a); b.b=normalizeExpr(b.b); }
+    if(b.type==='max'){ if(!Number.isFinite(Number(b.brightness))) b.brightness=8; b.fadeEffect=b.fadeEffect==='in'?'in':'none'; if(!Number.isFinite(Number(b.fadeSpeed))) b.fadeSpeed=50; } if(b.type==='clear'){ b.fadeOut=!!b.fadeOut; if(!Number.isFinite(Number(b.fadeSpeed))) b.fadeSpeed=500; }
+    if(Array.isArray(b.body))normalizeMaxBlocks(b.body);
+    if(Array.isArray(b.elseBody))normalizeMaxBlocks(b.elseBody);
+  });
+}
+
+
+// ==================== SAUVEGARDE AUTOMATIQUE ====================
+const AUTO_SAVE_KEY='programmation_esp8266_autosave_v1';
+let autoSaveTimer=null;
+
+function updateAutoSaveStatus(text){
+  const el=document.getElementById('autoSaveStatus');
+  if(el)el.textContent=text;
+}
+
+function saveAuto(){
+  try{
+    localStorage.setItem(AUTO_SAVE_KEY,JSON.stringify(projectData()));
+    updateAutoSaveStatus('● Sauvegarde automatique');
+  }catch(err){
+    updateAutoSaveStatus('⚠ Sauvegarde automatique indisponible');
+  }
+}
+
+function scheduleAutoSave(){
+  clearTimeout(autoSaveTimer);
+  updateAutoSaveStatus('● Enregistrement…');
+  autoSaveTimer=setTimeout(saveAuto,250);
+}
+
+function restoreAutoSave(){
+  try{
+    const raw=localStorage.getItem(AUTO_SAVE_KEY);
+    if(!raw)return false;
+    const data=JSON.parse(raw);
+    if(data.format!=='MAX7219-BLOCS' || !Array.isArray(data.blocks) || !Array.isArray(data.functions))return false;
+    setupBlocks=Array.isArray(data.setupBlocks)?data.setupBlocks:[];
+    // Migration des anciennes versions : les blocs Variable placés dans le programme vont dans Setup.
+    data.blocks=data.blocks.filter(b=>{if(b.type==='var'){setupBlocks.push(b);return false;}return true;});
+    blocks=data.blocks;
+    normalizeMaxBlocks(setupBlocks);
+    normalizeMaxBlocks(blocks);
+    functions=data.functions;
+    functions.forEach(f=>{if(typeof f.description!=='string')f.description='';});
+    const ids=[];
+    function collect(body){
+      body.forEach(b=>{
+        if(Number.isInteger(b.id))ids.push(b.id);
+        if(Array.isArray(b.body))collect(b.body);
+      });
+    }
+    collect(setupBlocks);
+    collect(blocks);
+    functions.forEach(f=>{
+      if(Number.isInteger(f.id))ids.push(f.id);
+      if(Array.isArray(f.body))collect(f.body);
+    });
+    nextId=Math.max(Number(data.nextId)||0,...ids,0)+1;
+    selectedId=null;
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+
+// ==================== ENREGISTRER / OUVRIR ====================
+function projectData(){
+  return {
+    format:'MAX7219-BLOCS',
+    version:1,
+    savedAt:new Date().toISOString(),
+    blocks:blocks,
+    functions:functions,
+    setupBlocks:setupBlocks,
+    nextId:nextId
+  };
+}
+
+function saveProject(){
+  saveAuto();
+  const data=JSON.stringify(projectData(),null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='programme_ESP8266.espbloc';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('✓ Programme enregistré !');
+}
+
+function loadProject(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(data.format!=='MAX7219-BLOCS' || !Array.isArray(data.blocks) || !Array.isArray(data.functions)){
+        throw new Error('Format invalide');
+      }
+      setupBlocks=Array.isArray(data.setupBlocks)?data.setupBlocks:[];
+      data.blocks=data.blocks.filter(b=>{if(b.type==='var'){setupBlocks.push(b);return false;}return true;});
+      blocks=data.blocks;
+      functions=data.functions;
+      functions.forEach(f=>{if(typeof f.description!=='string')f.description='';});
+      const ids=[];
+      function collect(body){
+        body.forEach(b=>{
+          if(Number.isInteger(b.id))ids.push(b.id);
+          if(Array.isArray(b.body))collect(b.body);
+        });
+      }
+      collect(blocks);
+      functions.forEach(f=>{
+        if(Number.isInteger(f.id))ids.push(f.id);
+        if(Array.isArray(f.body))collect(f.body);
+      });
+      nextId=Math.max(Number(data.nextId)||0,...ids,0)+1;
+      selectedId=null;
+      render();
+      showToast('✓ Programme ouvert !');
+    }catch(err){
+      showToast('⚠ Fichier de programme invalide');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('saveProgram').onclick=saveProject;
+document.getElementById('openProgram').onclick=()=>document.getElementById('fileProgram').click();
+document.getElementById('fileProgram').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(file)loadProject(file);
+  e.target.value='';
+});
+
+document.getElementById('clearProgram').onclick=()=>{if(confirm('Effacer tous les blocs du programme ?')){blocks=[];setupBlocks=[];selectedId=null;render()}};
+
+// Restaure automatiquement le dernier travail au chargement de la page.
+if(restoreAutoSave()){
+  render();
+  updateAutoSaveStatus('● Travail restauré automatiquement');
+} else {
+  updateAutoSaveStatus('● Sauvegarde automatique');
+}
+document.getElementById('copy').onclick=async()=>{
+  const text=document.getElementById('codeBox').textContent;
+  let copied=false;
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      copied=true;
+    }
+  }catch(e){}
+
+  if(!copied){
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.setAttribute('readonly','');
+    ta.style.position='fixed';
+    ta.style.left='-9999px';
+    ta.style.top='0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{copied=document.execCommand('copy');}catch(e){copied=false;}
+    document.body.removeChild(ta);
+  }
+
+  const toast=document.getElementById('toast');
+  toast.textContent=copied ? '✓ Code copié !' : 'Impossible de copier automatiquement';
+  toast.classList.add('show');
+  clearTimeout(window.copyToastTimer);
+  window.copyToastTimer=setTimeout(()=>toast.classList.remove('show'),1800);
+};
+render();
+</script>
+</body>
+</html>
