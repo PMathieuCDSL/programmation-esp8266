@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixelisation — page administrative</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#18212b;--muted:#5d6875;--line:#d8dee6;--accent:#1769aa;--cyan:#00a9c7;--pink:#e4008a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:#152536;color:#fff;padding:22px max(18px,calc((100vw - 1180px)/2))}
+header h1{font-size:clamp(1.35rem,3vw,2rem);margin:0 0 5px}header p{margin:0;color:#d6e2ee}
+main{max-width:1180px;margin:22px auto;padding:0 16px 36px;display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 8px #172b3b0a;min-width:0}
+h2{font-size:1.1rem;margin:0 0 14px}.field{margin:14px 0}.field label{display:flex;justify-content:space-between;gap:8px;font-weight:650;margin-bottom:6px}.field small,.hint{color:var(--muted);font-size:.88rem}
+input[type=file]{width:100%;padding:10px;border:1px dashed #9aa9b8;border-radius:9px;background:#fafbfd}
+input[type=range]{width:100%;accent-color:var(--accent)}input[type=number],select{padding:8px;border:1px solid #b9c4cf;border-radius:8px;font:inherit;width:100%}
+.check{display:flex;gap:9px;align-items:flex-start;margin:10px 0}.check input{margin-top:5px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.brush-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}.brush-tools button{border:1px solid #b8c4d0;background:#fff}.brush-tools button.selected{background:var(--accent);color:#fff;border-color:var(--accent)}button{border:0;border-radius:9px;padding:10px 13px;font:650 14px system-ui;cursor:pointer;background:#e7edf3;color:#172536}button.primary{background:var(--accent);color:white}button:disabled{opacity:.45;cursor:not-allowed}
+.previewtop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}.previewtop h2{margin:0}
+
+.zoom-control{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border,#d0d7de);border-radius:10px;background:#f8fafc}
+.zoom-control>label{display:block;font-weight:600;margin-bottom:7px}
+.zoom-row{display:flex;align-items:center;gap:10px}
+.zoom-row input[type=range]{flex:1;min-width:80px}
+.zoom-row input[type=number]{width:82px;padding:6px;border:1px solid #b8c4d0;border-radius:7px;font:inherit}
+#canvaswrap{position:relative;overflow:auto;display:block;height:75vh;max-height:75vh;min-height:240px;overscroll-behavior:contain} #preview{display:block;max-width:none;flex:none} #canvaswrap.fit-view{overflow:hidden;height:auto;max-height:none;min-height:0;display:flex;justify-content:center;align-items:flex-start} #canvaswrap.fit-view #preview{width:min(100%,768px)!important;height:auto;max-width:100%;}
+.brush-cursor{position:absolute;display:none;pointer-events:none;z-index:5;border:2px solid #ff2d55;background:rgba(255,45,85,.12);box-sizing:border-box;border-radius:1px}
+.canvaswrap{background:#e8edf2;border-radius:10px;padding:10px;overflow:auto;text-align:center;min-height:260px;display:flex;justify-content:center;align-items:flex-start}
+canvas{display:block;max-width:100%;height:auto;background:white;image-rendering:pixelated}
+.status{font-size:.9rem;color:var(--muted);margin-top:10px}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin:12px 0}.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+details{margin-top:12px}summary{cursor:pointer;font-weight:650}.note{background:#fff8e5;border:1px solid #f1d68b;padding:10px;border-radius:9px;font-size:.88rem;margin-top:14px}
+
+@media(max-width:850px){main{grid-template-columns:1fr}.canvaswrap{min-height:200px}}
+</style>
+</head>
+<body>
+<header><h1>Préparation d’image pour l’écran de DEL — Administration</h1><p>Grille 96 × 96 · 36 élèves · 4 matrices de 8 × 8 par élève</p></header>
+<main>
+<section class="panel">
+<h2>1. Image et réglages</h2>
+<div class="field"><label for="file">Importer une image</label><input id="file" type="file" accept="image/*"><div class="hint">Convertit l’image en 96 × 96 DEL. Le traitement reste dans votre navigateur.</div></div>
+<div class="field"><label for="projectFile">Ouvrir un projet enregistré</label><input id="projectFile" type="file" accept=".json,application/json"><div class="hint">Restaure l’image, les réglages et toutes les cases modifiées.</div></div>
+<div class="field"><label for="fit">Ajustement de l’image</label><select id="fit"><option value="contain">Conserver toute l’image (sans recadrage)</option><option value="stretch">Remplir le carré 96 × 96 (peut déformer)</option><option value="cover">Remplir le carré en recadrant</option></select></div>
+<div class="field"><label for="threshold">Seuil noir/blanc <output id="thresholdOut">150</output></label><input id="threshold" type="range" min="0" max="255" value="150"><small>Un seuil plus bas conserve seulement les traits très foncés; un seuil plus haut transforme davantage de zones en DEL allumées.</small></div>
+<div class="check"><input id="invert" type="checkbox"><label for="invert">Inversion — le blanc devient noir et le noir devient blanc</label></div>
+<div class="field"><label for="xoff">Décalage horizontal <output id="xout">0</output></label><input id="xoff" type="range" min="-20" max="20" value="0"></div>
+<div class="field"><label for="yoff">Décalage vertical <output id="yout">0</output></label><input id="yoff" type="range" min="-20" max="20" value="0"></div>
+<div class="field"><label for="grid">Grille des DEL</label><select id="grid"><option value="96">96 colonnes × 96 rangées</option></select></div>
+<div class="field"><label for="gridColor">Couleur des lignes de grille</label><select id="gridColor"><option value="#777777">Gris</option><option value="#333333">Gris foncé</option><option value="#ffffff">Blanc</option></select></div>
+<div class="field"><label for="cellLine">Épaisseur grille (px export)</label><input id="cellLine" type="number" min="0" max="5" step=".25" value="0"></div>
+<div class="field"><label for="matrixLine">Épaisseur séparation matrices (px export)</label><input id="matrixLine" type="number" min="0" max="8" step=".25" value="0.25"></div>
+<div class="field"><label for="studentLine">Épaisseur séparation élèves (px export)</label><input id="studentLine" type="number" min="0" max="10" step=".25" value="0.5"></div>
+<div class="check"><input id="showGrid" type="checkbox" checked><label for="showGrid">Afficher les lignes des 96 × 96 DEL</label></div>
+<div class="check"><input id="showMatrix" type="checkbox" checked><label for="showMatrix">Afficher les séparations des matrices (cyan)</label></div>
+<div class="check"><input id="showStudents" type="checkbox" checked><label for="showStudents">Afficher les séparations des élèves (rose)</label></div>
+<div class="check"><input id="showNumbers" type="checkbox" checked><label for="showNumbers">Ajouter les numéros 1 à 36 dans une bande au-dessus de chaque rangée d’élèves</label></div>
+<div class="field"><label for="margin">Hauteur de chaque bande numérotée (en cellules)</label><input id="margin" type="number" min="2" max="12" value="3"></div>
+
+<div class="actions"><button class="primary" id="saveProject">Enregistrer le projet</button><button id="downloadPreview">Exportation en format PNG</button><button id="reset">Réinitialiser</button></div>
+<div class="note"><b>Important :</b> les lignes sont superposées à l’image; le dessin n’est pas retracé. Pour que chaque ligne corresponde à une DEL, utilisez une image source déjà cadrée sur les 96 × 96 points. Les curseurs servent à corriger légèrement l’alignement.</div>
+</section>
+<section class="panel">
+<div class="previewtop"><h2>2. Aperçu</h2><span class="hint" id="dimensions">Aucune image sélectionnée</span></div>
+<div class="legend"><span><i class="dot" style="background:#777"></i>Grille des DEL</span><span><i class="dot" style="background:#00a9c7"></i>Limites des matrices</span><span><i class="dot" style="background:#e4008a"></i>Limites des élèves</span></div>
+<div class="zoom-control">
+ <label for="zoom">Zoom de l’aperçu <output id="zoomOut">100 %</output></label>
+ <div class="zoom-row">
+  <input id="zoom" type="range" min="100" max="250" step="10" value="100" aria-label="Zoom de l’aperçu">
+  <input id="zoomNumber" type="number" min="100" max="250" step="10" value="100" aria-label="Valeur du zoom en pourcentage">
+  <span>%</span>
+ </div>
+ <div class="hint">Agrandit ou réduit l’aperçu sans modifier l’image ni les DEL exportées.</div>
+</div>
+<div class="brush-tools" role="group" aria-label="Grosseur du crayon"><strong style="align-self:center">Grosseur du crayon :</strong><button type="button" class="selected" data-brush="1" aria-pressed="true">1 point</button><button type="button" data-brush="2" aria-pressed="false">2 × 2</button><button type="button" data-brush="3" aria-pressed="false">3 × 3</button></div><div class="hint">Le crayon est centré sur le point cliqué. Les bandes de numérotation ne sont pas modifiées.</div><div class="canvaswrap" id="canvaswrap"><canvas id="preview" width="768" height="768" aria-label="Aperçu de l’image quadrillée"></canvas><div id="brushCursor" class="brush-cursor" aria-hidden="true"></div></div>
+<div class="status" id="status">Sélectionnez une image pour commencer. Cliquez sur une case de la grille pour inverser son état noir/blanc.</div>
+<details><summary>Règles de numérotation</summary><p>Les élèves sont numérotés de gauche à droite, puis de haut en bas : 1, 2, 3 sur la première rangée; 4, 5, 6 sur la deuxième, jusqu’à 34, 35, 36. Une bande blanche est insérée au-dessus de chaque rangée d’élèves pour que les numéros soient lisibles et centrés. Chaque élève occupe 32 colonnes × 8 rangées de DEL (quatre matrices horizontales).</p></details>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const file=$('file'), preview=$('preview'), pctx=preview.getContext('2d');
+let img=null, sourceName='image', sourceDataUrl=null, manualEdits={}, binaryBitmap=null, brushSize=1;
+const brushCursor=$('brushCursor');
+function settings(){return {
+ fit:$('fit').value,x:+$('xoff').value,y:+$('yoff').value,threshold:+$('threshold').value,invert:$('invert').checked,
+ gridColor:$('gridColor').value,cellLine:Math.max(0,+$('cellLine').value||0),
+ matrixLine:Math.max(0,+$('matrixLine').value||0),studentLine:Math.max(0,+$('studentLine').value||0),
+ showGrid:$('showGrid').checked,showMatrix:$('showMatrix').checked,showStudents:$('showStudents').checked,
+ showNumbers:$('showNumbers').checked,margin:Math.max(2,Math.min(12,+$('margin').value||4))
+}}
+function drawBase(ctx, width, height, s, withMargin=true){
+ const cell=width/96;
+ const bandH=(withMargin&&s.showNumbers)?s.margin*cell:0;
+ const rowH=8*cell;
+ const totalH=height+(bandH*12);
+ ctx.canvas.width=Math.round(width);ctx.canvas.height=Math.round(totalH);
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,width,totalH);
+
+ // Convert the selected image into a strict 96 × 96 black/white bitmap first.
+ // Dark cells become black (LED on); light cells become white (LED off).
+ if(img){
+  const bitmap=document.createElement('canvas');bitmap.width=96;bitmap.height=96;
+  const bctx=bitmap.getContext('2d',{willReadFrequently:true});
+  bctx.fillStyle='#fff';bctx.fillRect(0,0,96,96);
+  const iw=img.naturalWidth, ih=img.naturalHeight;
+  let dw=96,dh=96,dx=0,dy=0;
+  if(s.fit==='contain'){
+   const sc=Math.min(96/iw,96/ih);dw=iw*sc;dh=ih*sc;dx=(96-dw)/2;dy=(96-dh)/2;
+  } else if(s.fit==='cover'){
+   const sc=Math.max(96/iw,96/ih);dw=iw*sc;dh=ih*sc;dx=(96-dw)/2;dy=(96-dh)/2;
+  }
+  dx+=s.x;dy+=s.y;
+  bctx.imageSmoothingEnabled=true;
+  bctx.drawImage(img,dx,dy,dw,dh);
+  const pixels=bctx.getImageData(0,0,96,96);
+  for(let i=0;i<pixels.data.length;i+=4){
+   const gray=0.299*pixels.data[i]+0.587*pixels.data[i+1]+0.114*pixels.data[i+2];
+   let v=gray<s.threshold?0:255;
+   if(s.invert) v=255-v;
+   pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=v;
+   pixels.data[i+3]=255;
+  }
+  for(const [key,value] of Object.entries(manualEdits)){
+   const parts=key.split(',');
+   const x=Number(parts[0]), y=Number(parts[1]);
+   if(x>=0&&x<96&&y>=0&&y<96){
+    const i=(y*96+x)*4;
+    pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=Number(value);
+    pixels.data[i+3]=255;
+   }
+  }
+  bctx.putImageData(pixels,0,0);
+  binaryBitmap=bitmap;
+  ctx.imageSmoothingEnabled=false;
+  for(let r=0;r<12;r++){
+   const destY=r*(rowH+bandH)+bandH;
+   ctx.drawImage(bitmap,0,r*8,96,8,0,destY,width,rowH);
+  }
+ }
+
+ // Grid cell boundaries; each 8-row student strip is separated by a label band.
+ if(s.showGrid){
+  ctx.strokeStyle=s.gridColor;ctx.lineWidth=s.cellLine*cell;ctx.beginPath();
+  for(let r=0;r<12;r++){
+   const top=r*(rowH+bandH)+bandH;
+   for(let i=0;i<=96;i++){
+    const x=i*cell;ctx.moveTo(x,top);ctx.lineTo(x,top+rowH);
+   }
+   for(let j=0;j<=8;j++){
+    const y=top+j*cell;ctx.moveTo(0,y);ctx.lineTo(width,y);
+   }
+  }
+  ctx.stroke();
+ }
+ // Cyan 8x8 matrix divisions only inside the LED rows, never in number bands.
+ if(s.showMatrix){
+  ctx.strokeStyle='#00a9c7';ctx.lineWidth=s.matrixLine*cell;ctx.beginPath();
+  for(let r=0;r<12;r++){
+   const top=r*(rowH+bandH)+bandH;
+   for(let i=0;i<=96;i+=8){const x=i*cell;ctx.moveTo(x,top);ctx.lineTo(x,top+rowH);}
+   for(let j=0;j<=8;j+=8){const y=top+j*cell;ctx.moveTo(0,y);ctx.lineTo(width,y);}
+  }
+  ctx.stroke();
+ }
+ // Pink student separators: vertical at 32 cells and horizontal at each student-row edge.
+ if(s.showStudents){
+  ctx.strokeStyle='#e4008a';ctx.lineWidth=s.studentLine*cell;ctx.beginPath();
+  for(let r=0;r<12;r++){
+   const top=r*(rowH+bandH);
+   const imageTop=top+bandH;
+   for(let c=0;c<=96;c+=32){
+    const x=c*cell;ctx.moveTo(x,top);ctx.lineTo(x,imageTop+rowH);
+   }
+   ctx.moveTo(0,imageTop);ctx.lineTo(width,imageTop);
+   ctx.moveTo(0,imageTop+rowH);ctx.lineTo(width,imageTop+rowH);
+  }
+  ctx.stroke();
+ }
+ // Clean white label band and draw real numeric labels centered over each 32-column student block.
+ if(withMargin&&s.showNumbers){
+  const fs=Math.max(9,Math.min(bandH*.68,cell*2.7));
+  ctx.font=`700 ${fs}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#d00078';
+  for(let r=0;r<12;r++){
+   const bandTop=r*(rowH+bandH);
+   ctx.fillStyle='#fff';ctx.fillRect(0,bandTop,width,bandH);
+   if(s.showStudents){
+    ctx.strokeStyle='#e4008a';ctx.lineWidth=s.studentLine*cell;ctx.beginPath();
+    for(let c=0;c<=96;c+=32){const x=c*cell;ctx.moveTo(x,bandTop);ctx.lineTo(x,bandTop+bandH);}
+    ctx.stroke();
+   }
+   ctx.fillStyle='#d00078';
+   for(let c=0;c<3;c++){
+    const n=r*3+c+1;
+    const x=(c*32+16)*cell;
+    const y=bandTop+bandH/2;
+    ctx.fillText(String(n),x,y);
+   }
+  }
+ }
+}
+const zoomSlider=$('zoom'), zoomNumber=$('zoomNumber'), zoomOut=$('zoomOut'), canvaswrap=$('canvaswrap');
+function applyZoom(value){
+ let z=Number(value);
+ if(!Number.isFinite(z))z=100;
+ z=Math.max(100,Math.min(250,Math.round(z/10)*10));
+ zoomSlider.value=z;zoomNumber.value=z;zoomOut.textContent=z+' %';
+ preview.style.height='auto';
+ if(z<=100){
+  // At 100% or less, show the whole image without needing vertical or horizontal scrolling.
+  canvaswrap.classList.add('fit-view');
+  preview.style.width='min('+z+'%, 768px)';
+ }else{
+  // Above 100%, preserve the enlarged size and let the user scroll in both directions.
+  canvaswrap.classList.remove('fit-view');
+  preview.style.width=(z/100*768)+'px';
+ }
+}
+zoomSlider.addEventListener('input',()=>applyZoom(zoomSlider.value));
+zoomNumber.addEventListener('change',()=>applyZoom(zoomNumber.value));
+zoomNumber.addEventListener('keydown',ev=>{if(ev.key==='Enter'){applyZoom(zoomNumber.value);zoomNumber.blur();}});
+applyZoom(100);
+
+function render(){
+ $('xout').textContent=$('xoff').value;$('yout').textContent=$('yoff').value;$('thresholdOut').textContent=$('threshold').value;
+ const s=settings(), width=768, height=768;
+ drawBase(pctx,width,height,s,true);
+ $('dimensions').textContent=img?`${img.naturalWidth} × ${img.naturalHeight} px`:'Aucune image sélectionnée';
+ $('status').textContent=img?`Image convertie en 96 × 96 DEL. Cliquez sur une case pour inverser son état. ${Object.keys(manualEdits).length} case(s) modifiée(s).`:'Sélectionnez une image ou ouvrez un projet pour commencer.';
+}
+file.addEventListener('change',()=>{
+ const f=file.files&&file.files[0];if(!f)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  sourceDataUrl=String(reader.result);
+  const im=new Image();
+  im.onload=()=>{img=im;sourceName=(f.name||'image').replace(/\.[^.]+$/,'');manualEdits={};render()};
+  im.onerror=()=>{$('status').textContent='Impossible de lire cette image.'};
+  im.src=sourceDataUrl;
+ };
+ reader.onerror=()=>{$('status').textContent='Impossible de lire le fichier image.'};
+ reader.readAsDataURL(f);
+});
+['fit','threshold','invert','xoff','yoff','gridColor','cellLine','matrixLine','studentLine','showGrid','showMatrix','showStudents','showNumbers','margin'].forEach(id=>$(id).addEventListener('input',render));
+// Choix de la grosseur du crayon.
+document.querySelectorAll('[data-brush]').forEach(button=>button.addEventListener('click',()=>{
+ brushSize=Number(button.dataset.brush);
+ document.querySelectorAll('[data-brush]').forEach(b=>{const active=b===button;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});
+ $('status').textContent=`Crayon ${brushSize===1?'1 point':brushSize+' × '+brushSize} sélectionné. Cliquez sur l’image pour modifier les DEL.`;
+}));
+// Le crayon modifie un carré centré sur la DEL cliquée.
+preview.style.cursor='none';
+preview.addEventListener('mousemove',ev=>{
+ if(!img||!binaryBitmap){brushCursor.style.display='none';return;}
+ const rect=preview.getBoundingClientRect();
+ const px=(ev.clientX-rect.left)*(preview.width/rect.width);
+ const py=(ev.clientY-rect.top)*(preview.height/rect.height);
+ const cell=preview.width/96, bandH=settings().showNumbers?settings().margin*cell:0, rowH=8*cell, stride=rowH+bandH;
+ const row=Math.floor(py/stride), within=py-row*stride-bandH;
+ if(px<0||px>=preview.width||row<0||row>=12||within<0||within>=rowH){brushCursor.style.display='none';return;}
+ const x=Math.floor(px/cell), y=Math.floor(within/cell);
+ // Position relative to the wrapper using the canvas's actual layout offset.
+ // This remains correct when the canvas is centered, scrolled, or zoomed.
+ const scaleX=rect.width/preview.width, scaleY=rect.height/preview.height;
+ // Utiliser exactement le même décalage que lors de la modification des DEL.
+ // Pour le 2 × 2, le carré couvre la case pointée et les cases à droite/en bas.
+ const offset=Math.floor((brushSize-1)/2);
+ const left=preview.offsetLeft+(x-offset)*cell*scaleX;
+ const top=preview.offsetTop+(row*stride+bandH+(y-offset)*cell)*scaleY;
+ const size=brushSize*cell*scaleX;
+ brushCursor.style.left=left+'px';brushCursor.style.top=top+'px';brushCursor.style.width=size+'px';brushCursor.style.height=size+'px';brushCursor.style.display='block';
+});
+preview.addEventListener('mouseleave',()=>brushCursor.style.display='none');
+preview.addEventListener('click',ev=>{
+ if(!img||!binaryBitmap)return;
+ const rect=preview.getBoundingClientRect();
+ const px=(ev.clientX-rect.left)*(preview.width/rect.width);
+ const py=(ev.clientY-rect.top)*(preview.height/rect.height);
+ const cell=preview.width/96;
+ const bandH=settings().showNumbers?settings().margin*cell:0;
+ const rowH=8*cell, stride=rowH+bandH;
+ const row=Math.floor(py/stride);
+ if(row<0||row>=12)return;
+ const within=py-row*stride-bandH;
+ if(within<0||within>=rowH)return;
+ const x=Math.floor(px/cell), y=row*8+Math.floor(within/cell);
+ if(x<0||x>=96||y<0||y>=96)return;
+ const data=binaryBitmap.getContext('2d').getImageData(x,y,1,1).data;
+ const newValue=data[0]<128?255:0;
+ // Pour les tailles paires, le point cliqué se trouve au centre du carré (biais d'une DEL vers le haut/gauche).
+ const offset=Math.floor((brushSize-1)/2);
+ for(let dy=0;dy<brushSize;dy++)for(let dx=0;dx<brushSize;dx++){
+  const xx=x-offset+dx, yy=y-offset+dy;
+  if(xx>=0&&xx<96&&yy>=0&&yy<96)manualEdits[`${xx},${yy}`]=newValue;
+ }
+ render();
+});
+
+function applySettings(values){
+ const ids=['fit','xoff','yoff','threshold','gridColor','cellLine','matrixLine','studentLine','showGrid','showMatrix','showStudents','showNumbers','margin','invert'];
+ for(const id of ids){
+  if(values[id]===undefined)continue;
+  const el=$(id);
+  if(el.type==='checkbox')el.checked=Boolean(values[id]);
+  else el.value=values[id];
+ }
+}
+$('saveProject').addEventListener('click',()=>{
+ if(!img||!sourceDataUrl){alert('Importez d’abord une image avant d’enregistrer le projet.');return}
+ const project={
+  format:'pixelisation-project',
+  version:1,
+  sourceName,
+  sourceImage:sourceDataUrl,
+  settings:settings(),
+  manualEdits
+ };
+ const blob=new Blob([JSON.stringify(project)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;a.download=(sourceName||'pixelisation')+'_projet.json';a.click();
+ URL.revokeObjectURL(url);
+ $('status').textContent='Projet enregistré avec l’image, les réglages et '+Object.keys(manualEdits).length+' case(s) modifiée(s).';
+});
+$('projectFile').addEventListener('change',()=>{
+ const f=$('projectFile').files&&$('projectFile').files[0];if(!f)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const project=JSON.parse(String(reader.result));
+   if(project.format!=='pixelisation-project'||!project.sourceImage||!project.settings)throw new Error('Format de projet non reconnu.');
+   sourceDataUrl=project.sourceImage;
+   sourceName=project.sourceName||f.name.replace(/\\.json$/i,'')||'projet';
+   manualEdits=(project.manualEdits&&typeof project.manualEdits==='object')?project.manualEdits:{};
+   applySettings(project.settings);
+   const im=new Image();
+   im.onload=()=>{img=im;render();$('status').textContent='Projet ouvert : image, réglages et '+Object.keys(manualEdits).length+' case(s) modifiée(s) restaurés.'};
+   im.onerror=()=>{$('status').textContent='Impossible de charger l’image contenue dans ce projet.'};
+   im.src=sourceDataUrl;
+  }catch(err){alert('Impossible d’ouvrir ce projet : '+err.message);}
+ };
+ reader.onerror=()=>alert('Impossible de lire le fichier de projet.');
+ reader.readAsText(f);
+});
+function exportCanvas(scale){
+ const s=settings(), c=document.createElement('canvas'), ctx=c.getContext('2d');
+ const baseW=96, baseH=96;
+ // The source pixels are kept intact; scale=1 exports at native resolution.
+ drawBase(ctx,baseW*scale,baseH*scale,s,true);
+ return c;
+}
+$('downloadPreview').addEventListener('click',()=>{
+ if(!img){alert('Sélectionnez d’abord une image.');return}
+ const c=exportCanvas(2);const a=document.createElement('a');a.download=sourceName+'_exportation.png';a.href=c.toDataURL('image/png');a.click();
+});
+$('reset').addEventListener('click',()=>{
+ $('fit').value='contain';$('threshold').value=150;$('invert').checked=false;$('xoff').value=0;$('yoff').value=0;$('gridColor').value='#777777';$('cellLine').value=0;$('matrixLine').value=.25;$('studentLine').value=.5;$('showGrid').checked=true;$('showMatrix').checked=true;$('showStudents').checked=true;$('showNumbers').checked=true;$('margin').value=3;manualEdits={};render();
+});
+render();
+</script>
+</body></html>
